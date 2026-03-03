@@ -74,6 +74,10 @@ devenv info python
 ## Built With
 
 <div align="center">
+  <img src="https://skillicons.dev/icons?i=electron,react,vite,nodejs,python,npm,docker,git&theme=dark" />
+</div>
+
+<div align="center">
 
 | Technology | Role |
 |---|---|
@@ -81,6 +85,10 @@ devenv info python
 | <img src="https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react&logoColor=black" /> | Renderer UI & component state |
 | <img src="https://img.shields.io/badge/Vite-646cff?style=flat-square&logo=vite&logoColor=white" /> | Build tooling via electron-vite |
 | <img src="https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=node.js&logoColor=white" /> | Runtime & IPC bridge |
+| <img src="https://img.shields.io/badge/Python-3776ab?style=flat-square&logo=python&logoColor=white" /> | pip package detection & uninstall |
+| <img src="https://img.shields.io/badge/npm-cc3534?style=flat-square&logo=npm&logoColor=white" /> | Global npm package detection |
+| <img src="https://img.shields.io/badge/Docker-2496ed?style=flat-square&logo=docker&logoColor=white" /> | Containerized CLI environment |
+| <img src="https://img.shields.io/badge/Git-f05032?style=flat-square&logo=git&logoColor=white" /> | Version control |
 
 </div>
 
