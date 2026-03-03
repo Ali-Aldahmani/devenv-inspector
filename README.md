@@ -53,7 +53,7 @@ Developers who work across Python, Node.js, and Conda constantly switch between 
 
 ## CLI Companion
 
-Prefer the terminal? The same functionality is available as a standalone npm package:
+Prefer the terminal? The same functionality is available as a standalone npm package — **[devenv-inspector-cli on npm](https://www.npmjs.com/package/devenv-inspector-cli)**:
 
 ```bash
 npm install -g devenv-inspector-cli
@@ -67,7 +67,7 @@ devenv uninstall numpy --runtime conda
 devenv info python
 ```
 
-> Source lives in [`cli/`](./cli) — same repo, zero Electron.
+> Source lives in [`cli/`](./cli) — same repo, zero Electron. Docker support included.
 
 ---
 
