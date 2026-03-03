@@ -151,10 +151,6 @@ Contributions are what make open source great. Any contribution you make is **hu
 4. Push to the branch — `git push origin feature/your-idea`
 5. Open a Pull Request
 
-Please open an issue first for major changes so we can discuss the approach.
-
-<a href="https://github.com/ali-aldahmani/devenv-inspector/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ali-aldahmani/devenv-inspector" alt="Contributors" />
 </a>
 
 ---
