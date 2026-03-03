@@ -1,0 +1,167 @@
+<div align="center">
+  <img src="media/logo.png" alt="DevEnv Inspector Logo" width="120" />
+
+  <h1>DevEnv Inspector</h1>
+
+  <p>A unified desktop GUI for inspecting and managing your development runtimes and global packages — no terminal required.</p>
+
+  <p>
+    <img src="https://img.shields.io/badge/version-0.1.0-5a7af5?style=for-the-badge" alt="Version" />
+    <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge&logo=apple" alt="Platform" />
+    <img src="https://img.shields.io/badge/license-MIT-44c98b?style=for-the-badge" alt="License" />
+    <img src="https://img.shields.io/badge/open%20source-%E2%9D%A4-e05454?style=for-the-badge" alt="Open Source" />
+  </p>
+
+  <p>
+    <a href="https://github.com/ali-aldahmani/devenv-inspector/issues">
+      <img src="https://img.shields.io/badge/Report%20a%20Bug-e05454?style=for-the-badge&logo=github&logoColor=white" alt="Report Bug" />
+    </a>
+    <a href="https://github.com/ali-aldahmani/devenv-inspector/issues">
+      <img src="https://img.shields.io/badge/Request%20Feature-5a7af5?style=for-the-badge&logo=github&logoColor=white" alt="Request Feature" />
+    </a>
+    <a href="https://github.com/ali-aldahmani/devenv-inspector/fork">
+      <img src="https://img.shields.io/badge/Fork%20this%20repo-44c98b?style=for-the-badge&logo=github&logoColor=white" alt="Fork" />
+    </a>
+  </p>
+</div>
+
+---
+
+## What is this?
+
+Developers who work across Python, Node.js, and Conda constantly switch between terminal commands just to see what's installed. DevEnv Inspector puts it all in one window — version badges, a searchable package list, and one-click uninstallation.
+
+<div align="center">
+  <img src="media/screenshot.png" alt="DevEnv Inspector Screenshot" width="780" />
+</div>
+
+---
+
+## Features
+
+- **Runtime detection** — instantly shows installed versions of Python, Conda, and Node.js
+- **Unified package table** — all pip, conda, and npm global packages in one searchable list
+- **Safe uninstallation** — confirmation dialog before any package is removed
+- **Filter by manager** — quickly scope the list to pip / conda / npm
+- **Graceful fallbacks** — missing runtimes show "Not Installed" and hide irrelevant packages
+- **No internet required** — everything runs locally against your machine
+
+---
+
+## Built With
+
+<div align="center">
+
+| Technology | Role |
+|---|---|
+| <img src="https://img.shields.io/badge/Electron-47848f?style=flat-square&logo=electron&logoColor=white" /> | Desktop shell & system command execution |
+| <img src="https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react&logoColor=black" /> | Renderer UI & component state |
+| <img src="https://img.shields.io/badge/Vite-646cff?style=flat-square&logo=vite&logoColor=white" /> | Build tooling via electron-vite |
+| <img src="https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=node.js&logoColor=white" /> | Runtime & IPC bridge |
+
+</div>
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org) v18 or later
+- npm v9 or later
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/ali-aldahmani/devenv-inspector.git
+
+# Navigate into the project
+cd devenv-inspector
+
+# Install dependencies
+npm install
+
+# Start the app in development mode
+npm run dev
+```
+
+### Build for production
+
+```bash
+npm run build
+```
+
+The output will be in the `out/` directory.
+
+---
+
+## How It Works
+
+```
+┌─────────────────────────────────────────────┐
+│              Renderer Process               │
+│   React UI — table, filters, dialogs        │
+└──────────────────┬──────────────────────────┘
+                   │  IPC (contextBridge)
+┌──────────────────▼──────────────────────────┐
+│               Main Process                  │
+│  detectors.js  →  python3 / conda / node    │
+│  parsers.js    →  pip / conda / npm --json  │
+│  ipcHandlers.js → uninstall routing         │
+└─────────────────────────────────────────────┘
+```
+
+All shell commands use `execFile` with sanitized arguments — no raw string interpolation, no shell injection surface.
+
+---
+
+## Supported Runtimes (v0.1.0)
+
+| Runtime | Packages | Uninstall |
+|---|---|---|
+| Python (system) | pip list | `pip uninstall -y` |
+| Anaconda | conda list | `conda remove -y` |
+| Node.js | npm list -g | `npm uninstall -g` |
+
+---
+
+## Roadmap
+
+- [ ] nvm / pyenv support
+- [ ] Virtual environment detection
+- [ ] Package update detection
+- [ ] Dependency graph visualization
+- [ ] Dark / light mode toggle
+- [ ] Plugin system for new package managers
+- [ ] Windows & Linux support
+
+---
+
+## Contributing
+
+Contributions are what make open source great. Any contribution you make is **hugely appreciated**.
+
+1. Fork the repository
+2. Create a feature branch — `git checkout -b feature/your-idea`
+3. Commit your changes — `git commit -m "Add your feature"`
+4. Push to the branch — `git push origin feature/your-idea`
+5. Open a Pull Request
+
+Please open an issue first for major changes so we can discuss the approach.
+
+<a href="https://github.com/ali-aldahmani/devenv-inspector/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=ali-aldahmani/devenv-inspector" alt="Contributors" />
+</a>
+
+---
+
+## License
+
+Distributed under the **MIT License** — see [`LICENSE`](LICENSE) for details.
+
+---
+
+<div align="center">
+  <sub>Built with care for developers who just want to see what's on their machine.</sub>
+</div>

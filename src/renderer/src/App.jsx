@@ -1,0 +1,95 @@
+import { useState, useEffect, useCallback } from 'react'
+import RuntimeCard from './components/RuntimeCard'
+import PackageTable from './components/PackageTable'
+
+const RUNTIME_META = [
+  { key: 'python', label: 'Python', managerLabel: 'pip' },
+  { key: 'conda', label: 'Conda', managerLabel: 'conda' },
+  { key: 'node', label: 'Node.js', managerLabel: 'npm' }
+]
+
+export default function App() {
+  const [runtimes, setRuntimes] = useState(null)
+  const [packages, setPackages] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [toast, setToast] = useState(null)
+
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [rt, pkgs] = await Promise.all([
+        window.electronAPI.getRuntimes(),
+        window.electronAPI.getPackages()
+      ])
+      setRuntimes(rt)
+      setPackages(pkgs)
+    } catch (err) {
+      console.error('Failed to load data:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 3500)
+  }
+
+  const handleUninstall = async (name, manager) => {
+    const result = await window.electronAPI.uninstallPackage(name, manager)
+    if (result.success) {
+      showToast(`"${name}" removed successfully.`, 'success')
+      // Refresh only packages (runtimes unchanged)
+      const pkgs = await window.electronAPI.getPackages()
+      setPackages(pkgs)
+    } else {
+      showToast(`Failed to remove "${name}": ${result.error}`, 'error')
+    }
+  }
+
+  return (
+    <div className="app">
+      <header className="app-header">
+        <h1 className="app-title">DevEnv Inspector</h1>
+        <span className="app-version">v0.1.0</span>
+        <button
+          className="btn-refresh"
+          onClick={loadData}
+          disabled={loading}
+          title="Refresh all data"
+        >
+          {loading ? 'Loading…' : 'Refresh'}
+        </button>
+      </header>
+
+      <section className="runtimes-row">
+        {RUNTIME_META.map(({ key, label }) => (
+          <RuntimeCard
+            key={key}
+            label={label}
+            info={runtimes ? runtimes[key] : null}
+            loading={loading}
+          />
+        ))}
+      </section>
+
+      <section className="packages-section">
+        <PackageTable
+          packages={packages}
+          loading={loading}
+          onUninstall={handleUninstall}
+        />
+      </section>
+
+      {toast && (
+        <div className={`toast toast-${toast.type}`}>
+          {toast.message}
+        </div>
+      )}
+    </div>
+  )
+}

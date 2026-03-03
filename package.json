@@ -1,0 +1,24 @@
+{
+  "name": "devenv-inspector",
+  "version": "0.1.0",
+  "description": "A unified GUI for viewing and managing dev runtimes and global packages",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^28.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "electron-vite": "^2.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "vite": "^5.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+}
