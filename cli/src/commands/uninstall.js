@@ -1,24 +1,16 @@
 import chalk from 'chalk'
-import { createRequire } from 'module'
 import { runInShell } from '../shell.js'
+import { getRegisteredRuntimes, getRuntime } from '../registry.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
-
-const VALID_MANAGERS = ['pip', 'conda', 'npm', 'yarn', 'pnpm']
-
-const UNINSTALL_COMMANDS = {
-  pip:   ['python3', ['-m', 'pip', 'uninstall', '-y']],
-  conda: ['conda',   ['remove', '-y']],
-  npm:   ['npm',     ['uninstall', '-g']],
-  yarn:  ['yarn',    ['global', 'remove']],
-  pnpm:  ['pnpm',    ['remove', '-g']]
-}
 
 export async function uninstallCommand(pkg, options) {
   const manager = options.runtime?.toLowerCase()
 
-  if (!VALID_MANAGERS.includes(manager)) {
-    console.error(chalk.red(`\n  Unknown runtime "${manager}". Valid values: pip, conda, npm, yarn, pnpm\n`))
+  const validManagers = getRegisteredRuntimes().filter((rt) => rt.uninstall).map((rt) => rt.name)
+
+  if (!validManagers.includes(manager)) {
+    console.error(chalk.red(`\n  Unknown runtime "${manager}". Valid values: ${validManagers.join(', ')}\n`))
     process.exit(1)
   }
 
@@ -46,8 +38,7 @@ export async function uninstallCommand(pkg, options) {
 
   console.log(chalk.dim(`\n  Running ${manager} uninstall ${pkg}...`))
 
-  const [cmd, baseArgs] = UNINSTALL_COMMANDS[manager]
-  const args = [...baseArgs, pkg]
+  const [cmd, args] = getRuntime(manager).uninstall(pkg)
 
   try {
     await runInShell(cmd, args, { timeout: 60000 })

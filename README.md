@@ -42,11 +42,12 @@ Developers who work across Python, Node.js, and Conda constantly switch between 
 
 ## Features
 
-- **Runtime detection** — instantly shows installed versions of Python, Conda, Node.js, Yarn, and pnpm
+- **Runtime detection** — instantly shows installed versions of Python, Conda, Node.js, npm, Yarn, and pnpm
 - **Unified package table** — all pip, conda, npm, yarn, and pnpm global packages in one searchable list
 - **Safe uninstallation** — confirmation dialog before any package is removed
-- **Filter by manager** — quickly scope the list to pip / conda / npm / yarn / pnpm
-- **Graceful fallbacks** — missing runtimes show "Not Installed" and hide irrelevant packages
+- **Filter by manager** — dynamically shows only the managers that are installed on your machine
+- **Graceful fallbacks** — missing runtimes show "Not Installed" and hide irrelevant filter tabs
+- **Plugin system** — add support for new package managers in a single file, zero changes to core code
 - **No internet required** — everything runs locally against your machine
 
 ---
@@ -135,18 +136,21 @@ This builds the source and produces a `.dmg` installer in `dist/`:
 ## How It Works
 
 ```
-┌─────────────────────────────────────────────┐
-│              Renderer Process               │
-│   React UI — table, filters, dialogs        │
-└──────────────────┬──────────────────────────┘
-                   │  IPC (contextBridge)
-┌──────────────────▼──────────────────────────┐
-│               Main Process                  │
-│  detectors.js  →  python3 / conda / node / yarn / pnpm  │
-│  parsers.js    →  pip / conda / npm / yarn / pnpm --json │
-│  ipcHandlers.js → uninstall routing         │
-│  shell.js      →  login shell executor      │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    Renderer Process                     │
+│   React UI — runtime cards, table, filters, dialogs    │
+│   Tabs derived dynamically from registry metadata       │
+└──────────────────────┬──────────────────────────────────┘
+                       │  IPC (contextBridge)
+┌──────────────────────▼──────────────────────────────────┐
+│                     Main Process                        │
+│  runtimes/builtins.js  →  registerRuntime() × 6        │
+│  registry.js           →  getRegisteredRuntimes()       │
+│  detectors.js          →  registry loop → versions      │
+│  parsers.js            →  registry loop → packages      │
+│  ipcHandlers.js        →  getRuntime() → uninstall      │
+│  shell.js              →  login shell executor          │
+└─────────────────────────────────────────────────────────┘
 ```
 
 Every command runs through the user's login shell (`zsh -i -l -c`) so that conda, pyenv, nvm, and other shell-managed tools are always found — both in dev mode and in the packaged `.app`.
@@ -155,24 +159,78 @@ Every command runs through the user's login shell (`zsh -i -l -c`) so that conda
 
 ## Supported Runtimes (v0.2.0)
 
-| Runtime | Packages | Uninstall |
+| Runtime | Detect | Packages | Uninstall |
+|---|---|---|---|
+| Python | `python3 --version` | `python3 -m pip list --format=json` | `python3 -m pip uninstall -y` |
+| Anaconda | `conda --version` | `conda list --json` | `conda remove -y` |
+| Node.js | `node --version` | — | — |
+| npm | `npm --version` | `npm list -g --depth=0 --json` | `npm uninstall -g` |
+| Yarn | `yarn --version` | `yarn global list --json` | `yarn global remove` |
+| pnpm | `pnpm --version` | `pnpm list -g --json` | `pnpm remove -g` |
+
+---
+
+## Plugin System
+
+v0.2.0 ships a runtime registry that makes adding new package managers trivial. Each built-in (pip, conda, npm, yarn, pnpm) is now a self-describing plugin object registered via `registerRuntime()`. The core detectors, parsers, IPC handlers, and renderer UI are all driven by the registry — they contain zero hardcoded manager names.
+
+### Adding a community runtime (e.g. Bun)
+
+Create one file — `src/main/runtimes/bun.js`:
+
+```js
+import { registerRuntime } from '../registry.js'
+import { runInShell } from '../shell.js'
+
+registerRuntime({
+  name:         'bun',
+  label:        'Bun',
+  color:        '#fbf0df',
+  detect:       () => runInShell('bun', ['--version'], { timeout: 10000 }).catch(() => null),
+  parseVersion: (o) => o.trim().replace(/^bun\s+v?/i, ''),
+  list:         async () => { /* parse: bun pm ls --global */ },
+  uninstall:    (pkg) => ['bun', ['remove', '-g', pkg]]
+})
+```
+
+Then add **one import line** in `src/main/index.js`:
+
+```js
+import './runtimes/bun.js'
+```
+
+That's it. The runtime card, filter tab, package listing, and uninstall button all appear automatically — **zero changes to core code**.
+
+### Plugin shape reference
+
+| Field | Type | Description |
 |---|---|---|
-| Python | `python3 -m pip list` | `python3 -m pip uninstall -y` |
-| Anaconda | `conda list --json` | `conda remove -y` |
-| Node.js | `npm list -g --depth=0` | `npm uninstall -g` |
-| Yarn | `yarn global list --json` | `yarn global remove` |
-| pnpm | `pnpm list -g --json` | `pnpm remove -g` |
+| `name` | `string` | Unique key (also used as `manager` in package rows) |
+| `label` | `string` | Display name in UI and CLI |
+| `color` | `string` | Hex color for the manager badge |
+| `detect` | `async () => string \| null` | Returns raw stdout, or `null` if not installed |
+| `parseVersion` | `(output) => string` | Cleans `detect()` output to a version string |
+| `list` | `async () => [{name, version}] \| null` | `null` = no packages for this runtime |
+| `uninstall` | `(pkg) => [cmd, args] \| null` | `null` = uninstall not supported |
 
 ---
 
 ## Roadmap
 
-- [ ] nvm / pyenv support
+### Shipped
+- [x] Python, Conda, Node.js, npm, Yarn, pnpm support
+- [x] Searchable + filterable global package table
+- [x] One-click uninstall with confirmation
+- [x] CLI companion (`devenv-inspector-cli` on npm)
+- [x] Docker support for the CLI
+- [x] **Plugin system** — add any runtime in a single file
+
+### Upcoming
+- [ ] nvm / pyenv version manager support
 - [ ] Virtual environment detection
-- [ ] Package update detection
+- [ ] Package update detection (`outdated` view)
 - [ ] Dependency graph visualization
 - [ ] Dark / light mode toggle
-- [ ] Plugin system for new package managers
 - [ ] Windows & Linux support
 
 ---

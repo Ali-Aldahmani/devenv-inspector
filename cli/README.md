@@ -140,6 +140,69 @@ All commands run through your login shell (`zsh -i -l -c`) — the same approach
 
 Package names are validated against `/^[a-zA-Z0-9._\-@/]+$/` before any shell call to prevent injection.
 
+Runtimes are powered by a **plugin registry** — each manager is a self-describing object registered via `registerRuntime()`. The CLI commands contain zero hardcoded manager names; everything is derived from the registry at runtime.
+
+---
+
+## Plugin System
+
+Adding support for a new package manager requires **one file** and **one import line**.
+
+Create `cli/src/runtimes/bun.js`:
+
+```js
+import { registerRuntime } from '../registry.js'
+import { runInShell } from '../shell.js'
+
+registerRuntime({
+  name:         'bun',
+  label:        'Bun',
+  color:        '#fbf0df',
+  detect:       () => runInShell('bun', ['--version'], { timeout: 10000 }).catch(() => null),
+  parseVersion: (o) => o.trim().replace(/^bun\s+v?/i, ''),
+  list:         async () => { /* parse: bun pm ls --global */ },
+  uninstall:    (pkg) => ['bun', ['remove', '-g', pkg]]
+})
+```
+
+Then add one line in `cli/bin/devenv.js`:
+
+```js
+import '../src/runtimes/bun.js'
+```
+
+Bun immediately appears in `devenv list`, `devenv packages --runtime bun`, `devenv uninstall`, and `devenv info bun` — **zero changes to CLI command files**.
+
+### Plugin shape reference
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` | Unique key used as `--runtime` value |
+| `label` | `string` | Display name in output |
+| `color` | `string` | Hex color for colored output |
+| `detect` | `async () => string \| null` | Returns raw stdout, or `null` if not installed |
+| `parseVersion` | `(output) => string` | Cleans `detect()` output to a version string |
+| `list` | `async () => [{name, version}] \| null` | `null` = no packages for this runtime |
+| `uninstall` | `(pkg) => [cmd, args] \| null` | `null` = uninstall not supported |
+
+---
+
+## Roadmap
+
+### Shipped
+- [x] Python, Conda, Node.js, npm, Yarn, pnpm support
+- [x] Colored, tabular package output with `cli-table3`
+- [x] Confirmation prompt before uninstall
+- [x] `devenv info` command for per-runtime details
+- [x] Docker support
+- [x] **Plugin system** — add any runtime in a single file
+
+### Upcoming
+- [ ] nvm / pyenv version manager support
+- [ ] `devenv packages --outdated` — highlight packages with available updates
+- [ ] JSON output flag (`--json`) for scripting
+- [ ] Windows & Linux support
+
 ---
 
 ## License

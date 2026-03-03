@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import ConfirmDialog from './ConfirmDialog'
 
-export default function PackageTable({ packages, loading, onUninstall }) {
+export default function PackageTable({ packages, loading, runtimes, onUninstall }) {
   const [search, setSearch] = useState('')
   const [filterManager, setFilterManager] = useState('all')
   const [pendingPkg, setPendingPkg] = useState(null)
@@ -36,7 +36,12 @@ export default function PackageTable({ packages, loading, onUninstall }) {
           onChange={(e) => setSearch(e.target.value)}
         />
         <div className="filter-tabs">
-          {['all', 'pip', 'conda', 'npm', 'yarn', 'pnpm'].map((m) => (
+          {['all', ...(runtimes
+            ? Object.entries(runtimes)
+                .filter(([, info]) => info.installed && info.hasPackages)
+                .map(([key]) => key)
+            : []
+          )].map((m) => (
             <button
               key={m}
               className={`filter-tab ${filterManager === m ? 'active' : ''}`}

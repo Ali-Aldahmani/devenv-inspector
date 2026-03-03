@@ -1,3 +1,4 @@
+import './runtimes/builtins.js'
 import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { registerIpcHandlers } from './ipcHandlers.js'

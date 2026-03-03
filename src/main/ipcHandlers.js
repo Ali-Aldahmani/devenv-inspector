@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import { detectRuntimes } from './detectors.js'
 import { getAllPackages } from './parsers.js'
 import { runInShell } from './shell.js'
+import { getRuntime } from './registry.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
 
@@ -25,20 +26,12 @@ export function registerIpcHandlers() {
       return { success: false, error: 'Invalid package name.' }
     }
 
-    const commandMap = {
-      pip:   ['python3', ['-m', 'pip', 'uninstall', name, '-y']],
-      conda: ['conda',   ['remove', name, '-y']],
-      npm:   ['npm',     ['uninstall', '-g', name]],
-      yarn:  ['yarn',    ['global', 'remove', name]],
-      pnpm:  ['pnpm',    ['remove', '-g', name]]
-    }
-
-    const entry = commandMap[manager]
-    if (!entry) {
+    const rt = getRuntime(manager)
+    if (!rt?.uninstall) {
       return { success: false, error: `Unknown manager: ${manager}` }
     }
 
-    const [cmd, args] = entry
+    const [cmd, args] = rt.uninstall(name)
     try {
       await runInShell(cmd, args, { timeout: 60000 })
       return { success: true }

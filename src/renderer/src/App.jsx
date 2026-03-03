@@ -2,14 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import RuntimeCard from './components/RuntimeCard'
 import PackageTable from './components/PackageTable'
 
-const RUNTIME_META = [
-  { key: 'python', label: 'Python', managerLabel: 'pip' },
-  { key: 'conda', label: 'Conda', managerLabel: 'conda' },
-  { key: 'node', label: 'Node.js', managerLabel: 'npm' },
-  { key: 'yarn', label: 'Yarn', managerLabel: 'yarn' },
-  { key: 'pnpm', label: 'pnpm', managerLabel: 'pnpm' }
-]
-
 export default function App() {
   const [runtimes, setRuntimes] = useState(null)
   const [packages, setPackages] = useState([])
@@ -69,20 +61,27 @@ export default function App() {
       </header>
 
       <section className="runtimes-row">
-        {RUNTIME_META.map(({ key, label }) => (
-          <RuntimeCard
-            key={key}
-            label={label}
-            info={runtimes ? runtimes[key] : null}
-            loading={loading}
-          />
-        ))}
+        {runtimes
+          ? Object.entries(runtimes).map(([key, info]) => (
+              <RuntimeCard
+                key={key}
+                label={info.label}
+                info={info}
+                loading={loading}
+              />
+            ))
+          : // Render placeholder cards while loading
+            Array.from({ length: 6 }).map((_, i) => (
+              <RuntimeCard key={i} label="" info={null} loading={true} />
+            ))
+        }
       </section>
 
       <section className="packages-section">
         <PackageTable
           packages={packages}
           loading={loading}
+          runtimes={runtimes}
           onUninstall={handleUninstall}
         />
       </section>

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import '../src/runtimes/builtins.js'
 import { Command } from 'commander'
 import { listCommand } from '../src/commands/list.js'
 import { packagesCommand } from '../src/commands/packages.js'

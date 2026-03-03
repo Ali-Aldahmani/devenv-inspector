@@ -2,22 +2,15 @@ import chalk from 'chalk'
 import Table from 'cli-table3'
 import { detectRuntimes } from '../detectors.js'
 import { getAllPackages } from '../parsers.js'
-
-const VALID_RUNTIMES = ['pip', 'conda', 'npm', 'yarn', 'pnpm']
-
-const MANAGER_COLORS = {
-  pip:   (s) => chalk.hex('#5a7af5')(s),
-  conda: (s) => chalk.hex('#44c98b')(s),
-  npm:   (s) => chalk.hex('#e05454')(s),
-  yarn:  (s) => chalk.hex('#2c8ebb')(s),
-  pnpm:  (s) => chalk.hex('#f69220')(s)
-}
+import { getRegisteredRuntimes, getRuntime } from '../registry.js'
 
 export async function packagesCommand(options) {
   const filter = options.runtime?.toLowerCase()
 
-  if (filter && !VALID_RUNTIMES.includes(filter)) {
-    console.error(chalk.red(`\n  Unknown runtime "${filter}". Valid values: pip, conda, npm, yarn, pnpm\n`))
+  const validRuntimes = getRegisteredRuntimes().filter((rt) => rt.list).map((rt) => rt.name)
+
+  if (filter && !validRuntimes.includes(filter)) {
+    console.error(chalk.red(`\n  Unknown runtime "${filter}". Valid values: ${validRuntimes.join(', ')}\n`))
     process.exit(1)
   }
 
@@ -54,7 +47,8 @@ export async function packagesCommand(options) {
   })
 
   for (const pkg of packages) {
-    const colorFn = MANAGER_COLORS[pkg.manager] || ((s) => s)
+    const color  = getRuntime(pkg.manager)?.color ?? '#ffffff'
+    const colorFn = (s) => chalk.hex(color)(s)
     table.push([
       pkg.name,
       chalk.dim(pkg.version),
