@@ -6,7 +6,9 @@ const RUNTIME_META = {
   python: { label: 'Python',  manager: 'pip',   packageLabel: 'pip packages' },
   conda:  { label: 'Conda',   manager: 'conda', packageLabel: 'conda packages' },
   node:   { label: 'Node.js', manager: null,    packageLabel: null },
-  npm:    { label: 'npm',     manager: 'npm',   packageLabel: 'global npm packages' }
+  npm:    { label: 'npm',     manager: 'npm',   packageLabel: 'global npm packages' },
+  yarn:   { label: 'Yarn',    manager: 'yarn',  packageLabel: 'global yarn packages' },
+  pnpm:   { label: 'pnpm',    manager: 'pnpm',  packageLabel: 'global pnpm packages' }
 }
 
 export async function infoCommand(runtime) {
@@ -14,7 +16,7 @@ export async function infoCommand(runtime) {
   const meta = RUNTIME_META[key]
 
   if (!meta) {
-    console.error(chalk.red(`\n  Unknown runtime "${runtime}". Valid values: python, conda, node, npm\n`))
+    console.error(chalk.red(`\n  Unknown runtime "${runtime}". Valid values: python, conda, node, npm, yarn, pnpm\n`))
     process.exit(1)
   }
 

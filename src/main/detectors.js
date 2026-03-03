@@ -9,13 +9,15 @@ async function tryCommand(cmd, args) {
 }
 
 export async function detectRuntimes() {
-  const [pythonOut, condaOut, nodeOut, npmOut] = await Promise.all([
+  const [pythonOut, condaOut, nodeOut, npmOut, yarnOut, pnpmOut] = await Promise.all([
     tryCommand('python3', ['--version']).then(
       (out) => out || tryCommand('python', ['--version'])
     ),
     tryCommand('conda', ['--version']),
     tryCommand('node', ['--version']),
-    tryCommand('npm', ['--version'])
+    tryCommand('npm', ['--version']),
+    tryCommand('yarn', ['--version']),
+    tryCommand('pnpm', ['--version'])
   ])
 
   return {
@@ -30,6 +32,12 @@ export async function detectRuntimes() {
       : { installed: false, version: null },
     npm: npmOut
       ? { installed: true, version: npmOut.trim() }
+      : { installed: false, version: null },
+    yarn: yarnOut
+      ? { installed: true, version: yarnOut.trim().replace(/^yarn\s+v?/i, '') }
+      : { installed: false, version: null },
+    pnpm: pnpmOut
+      ? { installed: true, version: pnpmOut.trim() }
       : { installed: false, version: null }
   }
 }

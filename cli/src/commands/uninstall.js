@@ -4,19 +4,21 @@ import { runInShell } from '../shell.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
 
-const VALID_MANAGERS = ['pip', 'conda', 'npm']
+const VALID_MANAGERS = ['pip', 'conda', 'npm', 'yarn', 'pnpm']
 
 const UNINSTALL_COMMANDS = {
   pip:   ['python3', ['-m', 'pip', 'uninstall', '-y']],
   conda: ['conda',   ['remove', '-y']],
-  npm:   ['npm',     ['uninstall', '-g']]
+  npm:   ['npm',     ['uninstall', '-g']],
+  yarn:  ['yarn',    ['global', 'remove']],
+  pnpm:  ['pnpm',    ['remove', '-g']]
 }
 
 export async function uninstallCommand(pkg, options) {
   const manager = options.runtime?.toLowerCase()
 
   if (!VALID_MANAGERS.includes(manager)) {
-    console.error(chalk.red(`\n  Unknown runtime "${manager}". Valid values: pip, conda, npm\n`))
+    console.error(chalk.red(`\n  Unknown runtime "${manager}". Valid values: pip, conda, npm, yarn, pnpm\n`))
     process.exit(1)
   }
 

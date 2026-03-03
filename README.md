@@ -74,7 +74,7 @@ devenv info python
 ## Built With
 
 <div align="center">
-  <img src="https://skillicons.dev/icons?i=electron,react,vite,nodejs,python,npm,docker,git&theme=dark" />
+  <img src="https://skillicons.dev/icons?i=electron,react,vite,nodejs,python,npm,yarn,pnpm,docker,git&theme=dark" />
 </div>
 
 <div align="center">
@@ -87,6 +87,8 @@ devenv info python
 | <img src="https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=node.js&logoColor=white" /> | Runtime & IPC bridge |
 | <img src="https://img.shields.io/badge/Python-3776ab?style=flat-square&logo=python&logoColor=white" /> | pip package detection & uninstall |
 | <img src="https://img.shields.io/badge/npm-cc3534?style=flat-square&logo=npm&logoColor=white" /> | Global npm package detection |
+| <img src="https://img.shields.io/badge/Yarn-2c8ebb?style=flat-square&logo=yarn&logoColor=white" /> | Global yarn package detection & uninstall |
+| <img src="https://img.shields.io/badge/pnpm-f69220?style=flat-square&logo=pnpm&logoColor=white" /> | Global pnpm package detection & uninstall |
 | <img src="https://img.shields.io/badge/Docker-2496ed?style=flat-square&logo=docker&logoColor=white" /> | Containerized CLI environment |
 | <img src="https://img.shields.io/badge/Git-f05032?style=flat-square&logo=git&logoColor=white" /> | Version control |
 
@@ -157,6 +159,8 @@ Every command runs through the user's login shell (`zsh -i -l -c`) so that conda
 | Python | `python3 -m pip list` | `python3 -m pip uninstall -y` |
 | Anaconda | `conda list --json` | `conda remove -y` |
 | Node.js | `npm list -g --depth=0` | `npm uninstall -g` |
+| Yarn | `yarn global list --json` | `yarn global remove` |
+| pnpm | `pnpm list -g --json` | `pnpm remove -g` |
 
 ---
 

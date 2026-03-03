@@ -36,7 +36,7 @@ export default function PackageTable({ packages, loading, onUninstall }) {
           onChange={(e) => setSearch(e.target.value)}
         />
         <div className="filter-tabs">
-          {['all', 'pip', 'conda', 'npm'].map((m) => (
+          {['all', 'pip', 'conda', 'npm', 'yarn', 'pnpm'].map((m) => (
             <button
               key={m}
               className={`filter-tab ${filterManager === m ? 'active' : ''}`}

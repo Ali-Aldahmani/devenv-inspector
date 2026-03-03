@@ -5,7 +5,9 @@ import PackageTable from './components/PackageTable'
 const RUNTIME_META = [
   { key: 'python', label: 'Python', managerLabel: 'pip' },
   { key: 'conda', label: 'Conda', managerLabel: 'conda' },
-  { key: 'node', label: 'Node.js', managerLabel: 'npm' }
+  { key: 'node', label: 'Node.js', managerLabel: 'npm' },
+  { key: 'yarn', label: 'Yarn', managerLabel: 'yarn' },
+  { key: 'pnpm', label: 'pnpm', managerLabel: 'pnpm' }
 ]
 
 export default function App() {

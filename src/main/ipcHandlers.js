@@ -28,7 +28,9 @@ export function registerIpcHandlers() {
     const commandMap = {
       pip:   ['python3', ['-m', 'pip', 'uninstall', name, '-y']],
       conda: ['conda',   ['remove', name, '-y']],
-      npm:   ['npm',     ['uninstall', '-g', name]]
+      npm:   ['npm',     ['uninstall', '-g', name]],
+      yarn:  ['yarn',    ['global', 'remove', name]],
+      pnpm:  ['pnpm',    ['remove', '-g', name]]
     }
 
     const entry = commandMap[manager]
