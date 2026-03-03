@@ -3,6 +3,7 @@ import { detectRuntimes } from './detectors.js'
 import { getAllPackages } from './parsers.js'
 import { runInShell } from './shell.js'
 import { getRuntime } from './registry.js'
+import { getActivePorts, killProcess } from './ports.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
 
@@ -38,6 +39,21 @@ export function registerIpcHandlers() {
     } catch (err) {
       const message = err.stderr || err.message || 'Unknown error'
       console.error(`[ipc] uninstall ${manager}/${name} failed:`, message)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle('get-ports', async () => {
+    return getActivePorts()
+  })
+
+  ipcMain.handle('kill-port', async (_event, pid) => {
+    try {
+      killProcess(pid)
+      return { success: true }
+    } catch (err) {
+      const message = err.message || 'Unknown error'
+      console.error(`[ipc] kill-port pid=${pid} failed:`, message)
       return { success: false, error: message }
     }
   })

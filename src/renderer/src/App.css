@@ -392,3 +392,99 @@ body {
   from { opacity: 0; transform: translateX(-50%) translateY(8px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* ── Section Tabs (Packages / Active Ports) ── */
+.section-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+
+.section-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 16px;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.section-tab:hover { color: var(--text); }
+
+.section-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.tab-count {
+  background: rgba(90, 122, 245, 0.18);
+  color: var(--accent);
+  border: 1px solid rgba(90, 122, 245, 0.3);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+/* ── Protocol Badges ── */
+.protocol-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.protocol-tcp  { background: rgba(75,158,255,0.12);  color: #4b9eff; border: 1px solid rgba(75,158,255,0.25);  }
+.protocol-udp  { background: rgba(246,146,32,0.12);  color: #f69220; border: 1px solid rgba(246,146,32,0.25);  }
+.protocol-pid  { background: rgba(122,127,153,0.12); color: var(--text-muted); border: 1px solid rgba(122,127,153,0.25); }
+
+/* ── Ports Table Columns ── */
+.col-port    { font-family: var(--mono); font-weight: 600; color: var(--text); }
+.col-pid     { font-family: var(--mono); color: var(--text-muted); }
+.col-process { font-weight: 500; }
+
+/* ── Kill Button (row) ── */
+.btn-kill-row {
+  background: transparent;
+  border: 1px solid rgba(246, 146, 32, 0.35);
+  color: #f69220;
+  font-size: 12px;
+  padding: 3px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-kill-row:hover:not(:disabled) {
+  background: rgba(246, 146, 32, 0.1);
+  border-color: #f69220;
+}
+
+.btn-kill-row:disabled { opacity: 0.4; cursor: default; }
+
+/* ── Kill Dialog button ── */
+.btn-kill {
+  background: #f69220;
+  border: 1px solid #f69220;
+  color: #fff;
+  padding: 7px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+
+.btn-kill:hover { opacity: 0.85; }

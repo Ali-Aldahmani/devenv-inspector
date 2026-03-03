@@ -1,22 +1,27 @@
 import { useState, useEffect, useCallback } from 'react'
 import RuntimeCard from './components/RuntimeCard'
 import PackageTable from './components/PackageTable'
+import PortsTable from './components/PortsTable'
 
 export default function App() {
   const [runtimes, setRuntimes] = useState(null)
   const [packages, setPackages] = useState([])
+  const [ports, setPorts] = useState([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
+  const [activeTab, setActiveTab] = useState('packages')
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [rt, pkgs] = await Promise.all([
+      const [rt, pkgs, pts] = await Promise.all([
         window.electronAPI.getRuntimes(),
-        window.electronAPI.getPackages()
+        window.electronAPI.getPackages(),
+        window.electronAPI.getPorts()
       ])
       setRuntimes(rt)
       setPackages(pkgs)
+      setPorts(pts)
     } catch (err) {
       console.error('Failed to load data:', err)
     } finally {
@@ -42,6 +47,18 @@ export default function App() {
       setPackages(pkgs)
     } else {
       showToast(`Failed to remove "${name}": ${result.error}`, 'error')
+    }
+  }
+
+  const handleKillPort = async (pid) => {
+    const result = await window.electronAPI.killPort(pid)
+    if (result.success) {
+      showToast(`Process ${pid} terminated.`, 'success')
+      // Refresh ports list only
+      const pts = await window.electronAPI.getPorts()
+      setPorts(pts)
+    } else {
+      showToast(`Failed to kill process ${pid}: ${result.error}`, 'error')
     }
   }
 
@@ -77,14 +94,45 @@ export default function App() {
         }
       </section>
 
-      <section className="packages-section">
-        <PackageTable
-          packages={packages}
-          loading={loading}
-          runtimes={runtimes}
-          onUninstall={handleUninstall}
-        />
-      </section>
+      {/* ── Section tabs ── */}
+      <div className="section-tabs">
+        <button
+          className={`section-tab ${activeTab === 'packages' ? 'active' : ''}`}
+          onClick={() => setActiveTab('packages')}
+        >
+          Packages
+        </button>
+        <button
+          className={`section-tab ${activeTab === 'ports' ? 'active' : ''}`}
+          onClick={() => setActiveTab('ports')}
+        >
+          Active Ports
+          {!loading && ports.length > 0 && (
+            <span className="tab-count">{ports.length}</span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === 'packages' && (
+        <section className="packages-section">
+          <PackageTable
+            packages={packages}
+            loading={loading}
+            runtimes={runtimes}
+            onUninstall={handleUninstall}
+          />
+        </section>
+      )}
+
+      {activeTab === 'ports' && (
+        <section className="packages-section">
+          <PortsTable
+            ports={ports}
+            loading={loading}
+            onKill={handleKillPort}
+          />
+        </section>
+      )}
 
       {toast && (
         <div className={`toast toast-${toast.type}`}>

@@ -5,6 +5,7 @@ import { listCommand } from '../src/commands/list.js'
 import { packagesCommand } from '../src/commands/packages.js'
 import { uninstallCommand } from '../src/commands/uninstall.js'
 import { infoCommand } from '../src/commands/info.js'
+import { portsCommand } from '../src/commands/ports.js'
 
 const program = new Command()
 
@@ -34,5 +35,10 @@ program
   .command('info <runtime>')
   .description('Show detailed info for a runtime (python, conda, node, npm)')
   .action(infoCommand)
+
+program
+  .command('ports')
+  .description('Show all active local listening ports and their processes')
+  .action(portsCommand)
 
 await program.parseAsync(process.argv)
