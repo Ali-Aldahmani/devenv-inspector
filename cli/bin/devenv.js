@@ -12,7 +12,7 @@ const program = new Command()
 program
   .name('devenv')
   .description('Inspect and manage your development runtimes and global packages')
-  .version('0.2.0')
+  .version('0.3.0')
 
 program
   .command('list')

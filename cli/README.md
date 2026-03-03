@@ -1,9 +1,9 @@
 <div align="center">
   <h1>devenv-inspector-cli</h1>
-  <p>Inspect runtimes and manage global packages from your terminal — no GUI required.</p>
+  <p>Inspect runtimes, manage global packages, and monitor active local ports from your terminal — no GUI required.</p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-0.2.0-5a7af5?style=for-the-badge" alt="Version" />
+    <img src="https://img.shields.io/badge/version-0.3.0-5a7af5?style=for-the-badge" alt="Version" />
     <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge&logo=apple" alt="Platform" />
     <img src="https://img.shields.io/badge/license-MIT-44c98b?style=for-the-badge" alt="License" />
     <img src="https://img.shields.io/npm/v/devenv-inspector-cli?style=for-the-badge&logo=npm&color=cc3534" alt="npm" />
@@ -31,6 +31,7 @@ No Node.js or Python required — just Docker:
 docker run --rm ghcr.io/ali-aldahmani/devenv-inspector-cli list
 docker run --rm ghcr.io/ali-aldahmani/devenv-inspector-cli packages
 docker run --rm ghcr.io/ali-aldahmani/devenv-inspector-cli info python
+docker run --rm ghcr.io/ali-aldahmani/devenv-inspector-cli ports
 
 # Or build locally from source
 git clone https://github.com/Ali-Aldahmani/devenv-inspector.git
@@ -134,11 +135,37 @@ $ devenv info python
 
 ---
 
+### `devenv ports`
+Show all active local listening ports (TCP + UDP) with their process details.
+
+```
+$ devenv ports
+
+  DevEnv Inspector — Active Local Ports
+
+  ┌────────┬──────────┬───────┬────────────┐
+  │ Port   │ Protocol │ PID   │ Process    │
+  ├────────┼──────────┼───────┼────────────┤
+  │ 3000   │ TCP      │ 1234  │ node       │
+  │ 5432   │ TCP      │ 2345  │ postgres   │
+  │ 8000   │ TCP      │ 3456  │ python3    │
+  │ 8080   │ TCP      │ 4567  │ node       │
+  └────────┴──────────┴───────┴────────────┘
+
+  4 active ports
+```
+
+TCP ports are colored **blue**, UDP ports **orange**. Only `LISTEN` state TCP sockets and bound UDP sockets are shown — established connections are excluded.
+
+---
+
 ## How It Works
 
 All commands run through your login shell (`zsh -i -l -c`) — the same approach as the GUI app — so conda, pyenv, nvm, and other shell-managed tools are always found.
 
 Package names are validated against `/^[a-zA-Z0-9._\-@/]+$/` before any shell call to prevent injection.
+
+Port detection uses `lsof -F pcn` with structured field output — no fragile header parsing. IPv4/IPv6 duplicates are deduplicated automatically.
 
 Runtimes are powered by a **plugin registry** — each manager is a self-describing object registered via `registerRuntime()`. The CLI commands contain zero hardcoded manager names; everything is derived from the registry at runtime.
 
@@ -196,6 +223,7 @@ Bun immediately appears in `devenv list`, `devenv packages --runtime bun`, `deve
 - [x] `devenv info` command for per-runtime details
 - [x] Docker support
 - [x] **Plugin system** — add any runtime in a single file
+- [x] **`devenv ports`** — active TCP/UDP port viewer with process names
 
 ### Upcoming
 - [ ] nvm / pyenv version manager support

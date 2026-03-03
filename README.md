@@ -3,10 +3,10 @@
 
   <h1>DevEnv Inspector</h1>
 
-  <p>A unified desktop GUI for inspecting and managing your development runtimes and global packages — no terminal required.</p>
+  <p>A unified desktop GUI for inspecting runtimes, managing global packages, and monitoring active local ports — no terminal required.</p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-0.2.0-5a7af5?style=for-the-badge" alt="Version" />
+    <img src="https://img.shields.io/badge/version-0.3.0-5a7af5?style=for-the-badge" alt="Version" />
     <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge&logo=apple" alt="Platform" />
     <img src="https://img.shields.io/badge/license-MIT-44c98b?style=for-the-badge" alt="License" />
     <img src="https://img.shields.io/badge/open%20source-%E2%9D%A4-e05454?style=for-the-badge" alt="Open Source" />
@@ -32,7 +32,7 @@
 
 ## What is this?
 
-Developers who work across Python, Node.js, and Conda constantly switch between terminal commands just to see what's installed. DevEnv Inspector puts it all in one window — version badges, a searchable package list, and one-click uninstallation.
+Developers who work across Python, Node.js, and Conda constantly switch between terminal commands just to see what's installed — and what's running. DevEnv Inspector puts it all in one window: version badges, a searchable package list, one-click uninstallation, and a live view of every port in use on your machine.
 
 <div align="center">
   <img src="media/screenshot.png" alt="DevEnv Inspector Screenshot" width="780" />
@@ -46,6 +46,8 @@ Developers who work across Python, Node.js, and Conda constantly switch between 
 - **Unified package table** — all pip, conda, npm, yarn, and pnpm global packages in one searchable list
 - **Safe uninstallation** — confirmation dialog before any package is removed
 - **Filter by manager** — dynamically shows only the managers that are installed on your machine
+- **Active Ports tab** — see every TCP/UDP port in use: port number, protocol, PID, and process name
+- **Kill process** — terminate any port's process with a single click and a confirmation dialog
 - **Graceful fallbacks** — missing runtimes show "Not Installed" and hide irrelevant filter tabs
 - **Plugin system** — add support for new package managers in a single file, zero changes to core code
 - **No internet required** — everything runs locally against your machine
@@ -67,6 +69,7 @@ devenv packages --runtime pip      # filter by manager
 devenv packages --runtime pnpm     # pnpm only
 devenv uninstall numpy --runtime conda
 devenv info pnpm
+devenv ports                       # show all active local ports
 ```
 
 > Source lives in [`cli/`](./cli) — same repo, zero Electron. Docker support included.
@@ -128,8 +131,8 @@ npm run package
 ```
 
 This builds the source and produces a `.dmg` installer in `dist/`:
-- `DevEnv Inspector-0.2.0-arm64.dmg` — Apple Silicon
-- `DevEnv Inspector-0.2.0.dmg` — Intel
+- `DevEnv Inspector-0.3.0-arm64.dmg` — Apple Silicon
+- `DevEnv Inspector-0.3.0.dmg` — Intel
 
 ---
 
@@ -138,7 +141,7 @@ This builds the source and produces a `.dmg` installer in `dist/`:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    Renderer Process                     │
-│   React UI — runtime cards, table, filters, dialogs    │
+│   React UI — runtime cards, Packages tab, Ports tab    │
 │   Tabs derived dynamically from registry metadata       │
 └──────────────────────┬──────────────────────────────────┘
                        │  IPC (contextBridge)
@@ -148,7 +151,8 @@ This builds the source and produces a `.dmg` installer in `dist/`:
 │  registry.js           →  getRegisteredRuntimes()       │
 │  detectors.js          →  registry loop → versions      │
 │  parsers.js            →  registry loop → packages      │
-│  ipcHandlers.js        →  getRuntime() → uninstall      │
+│  ports.js              →  lsof → TCP/UDP port list      │
+│  ipcHandlers.js        →  uninstall + kill-port routing │
 │  shell.js              →  login shell executor          │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -157,7 +161,7 @@ Every command runs through the user's login shell (`zsh -i -l -c`) so that conda
 
 ---
 
-## Supported Runtimes (v0.2.0)
+## Supported Runtimes (v0.3.0)
 
 | Runtime | Detect | Packages | Uninstall |
 |---|---|---|---|
@@ -170,9 +174,33 @@ Every command runs through the user's login shell (`zsh -i -l -c`) so that conda
 
 ---
 
+## Active Local Ports
+
+The **Active Ports** tab gives you an instant overview of every listening port on your machine — the same information as `lsof`, presented without the terminal.
+
+| Column | Description |
+|---|---|
+| **Port** | The open port number |
+| **Protocol** | TCP or UDP |
+| **PID** | Process ID using the port |
+| **Process** | Name of the program / service |
+
+### In the GUI
+
+- Switch to the **Active Ports** tab next to Packages — a live count badge shows how many ports are open
+- Search by port number, process name, or PID
+- Filter by **TCP** / **UDP**
+- Click **Kill** on any row → confirmation dialog → sends `SIGTERM` to that process
+
+### How ports are detected
+
+`lsof -F pcn` is used with structured field output — no text parsing of headers, injection-safe. TCP ports are filtered to `LISTEN` state only. IPv4/IPv6 duplicates are deduplicated automatically.
+
+---
+
 ## Plugin System
 
-v0.2.0 ships a runtime registry that makes adding new package managers trivial. Each built-in (pip, conda, npm, yarn, pnpm) is now a self-describing plugin object registered via `registerRuntime()`. The core detectors, parsers, IPC handlers, and renderer UI are all driven by the registry — they contain zero hardcoded manager names.
+v0.3.0 ships a runtime registry that makes adding new package managers trivial. Each built-in (pip, conda, npm, yarn, pnpm) is now a self-describing plugin object registered via `registerRuntime()`. The core detectors, parsers, IPC handlers, and renderer UI are all driven by the registry — they contain zero hardcoded manager names.
 
 ### Adding a community runtime (e.g. Bun)
 
@@ -224,6 +252,7 @@ That's it. The runtime card, filter tab, package listing, and uninstall button a
 - [x] CLI companion (`devenv-inspector-cli` on npm)
 - [x] Docker support for the CLI
 - [x] **Plugin system** — add any runtime in a single file
+- [x] **Active Local Ports** — live TCP/UDP port viewer with process names and kill support
 
 ### Upcoming
 - [ ] nvm / pyenv version manager support

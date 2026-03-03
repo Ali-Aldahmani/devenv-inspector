@@ -66,7 +66,7 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <h1 className="app-title">DevEnv Inspector</h1>
-        <span className="app-version">v0.2.0</span>
+        <span className="app-version">v0.3.0</span>
         <button
           className="btn-refresh"
           onClick={loadData}
