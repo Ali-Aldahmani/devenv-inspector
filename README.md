@@ -86,13 +86,15 @@ npm install
 npm run dev
 ```
 
-### Build for production
+### Package as a macOS app
 
 ```bash
-npm run build
+npm run package
 ```
 
-The output will be in the `out/` directory.
+This builds the source and produces a `.dmg` installer in `dist/`:
+- `DevEnv Inspector-0.1.0-arm64.dmg` — Apple Silicon
+- `DevEnv Inspector-0.1.0.dmg` — Intel
 
 ---
 
@@ -109,10 +111,11 @@ The output will be in the `out/` directory.
 │  detectors.js  →  python3 / conda / node    │
 │  parsers.js    →  pip / conda / npm --json  │
 │  ipcHandlers.js → uninstall routing         │
+│  shell.js      →  login shell executor      │
 └─────────────────────────────────────────────┘
 ```
 
-All shell commands use `execFile` with sanitized arguments — no raw string interpolation, no shell injection surface.
+Every command runs through the user's login shell (`zsh -i -l -c`) so that conda, pyenv, nvm, and other shell-managed tools are always found — both in dev mode and in the packaged `.app`.
 
 ---
 
@@ -120,9 +123,9 @@ All shell commands use `execFile` with sanitized arguments — no raw string int
 
 | Runtime | Packages | Uninstall |
 |---|---|---|
-| Python (system) | pip list | `pip uninstall -y` |
-| Anaconda | conda list | `conda remove -y` |
-| Node.js | npm list -g | `npm uninstall -g` |
+| Python | `python3 -m pip list` | `python3 -m pip uninstall -y` |
+| Anaconda | `conda list --json` | `conda remove -y` |
+| Node.js | `npm list -g --depth=0` | `npm uninstall -g` |
 
 ---
 
