@@ -6,7 +6,7 @@
   <p>A unified desktop GUI for inspecting and managing your development runtimes and global packages — no terminal required.</p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-0.1.0-5a7af5?style=for-the-badge" alt="Version" />
+    <img src="https://img.shields.io/badge/version-0.2.0-5a7af5?style=for-the-badge" alt="Version" />
     <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge&logo=apple" alt="Platform" />
     <img src="https://img.shields.io/badge/license-MIT-44c98b?style=for-the-badge" alt="License" />
     <img src="https://img.shields.io/badge/open%20source-%E2%9D%A4-e05454?style=for-the-badge" alt="Open Source" />
@@ -42,10 +42,10 @@ Developers who work across Python, Node.js, and Conda constantly switch between 
 
 ## Features
 
-- **Runtime detection** — instantly shows installed versions of Python, Conda, and Node.js
-- **Unified package table** — all pip, conda, and npm global packages in one searchable list
+- **Runtime detection** — instantly shows installed versions of Python, Conda, Node.js, Yarn, and pnpm
+- **Unified package table** — all pip, conda, npm, yarn, and pnpm global packages in one searchable list
 - **Safe uninstallation** — confirmation dialog before any package is removed
-- **Filter by manager** — quickly scope the list to pip / conda / npm
+- **Filter by manager** — quickly scope the list to pip / conda / npm / yarn / pnpm
 - **Graceful fallbacks** — missing runtimes show "Not Installed" and hide irrelevant packages
 - **No internet required** — everything runs locally against your machine
 
@@ -63,8 +63,9 @@ npm install -g devenv-inspector-cli
 devenv list                        # show all runtimes
 devenv packages                    # list all global packages
 devenv packages --runtime pip      # filter by manager
+devenv packages --runtime pnpm     # pnpm only
 devenv uninstall numpy --runtime conda
-devenv info python
+devenv info pnpm
 ```
 
 > Source lives in [`cli/`](./cli) — same repo, zero Electron. Docker support included.
@@ -126,8 +127,8 @@ npm run package
 ```
 
 This builds the source and produces a `.dmg` installer in `dist/`:
-- `DevEnv Inspector-0.1.0-arm64.dmg` — Apple Silicon
-- `DevEnv Inspector-0.1.0.dmg` — Intel
+- `DevEnv Inspector-0.2.0-arm64.dmg` — Apple Silicon
+- `DevEnv Inspector-0.2.0.dmg` — Intel
 
 ---
 
@@ -141,8 +142,8 @@ This builds the source and produces a `.dmg` installer in `dist/`:
                    │  IPC (contextBridge)
 ┌──────────────────▼──────────────────────────┐
 │               Main Process                  │
-│  detectors.js  →  python3 / conda / node    │
-│  parsers.js    →  pip / conda / npm --json  │
+│  detectors.js  →  python3 / conda / node / yarn / pnpm  │
+│  parsers.js    →  pip / conda / npm / yarn / pnpm --json │
 │  ipcHandlers.js → uninstall routing         │
 │  shell.js      →  login shell executor      │
 └─────────────────────────────────────────────┘
@@ -152,7 +153,7 @@ Every command runs through the user's login shell (`zsh -i -l -c`) so that conda
 
 ---
 
-## Supported Runtimes (v0.1.0)
+## Supported Runtimes (v0.2.0)
 
 | Runtime | Packages | Uninstall |
 |---|---|---|

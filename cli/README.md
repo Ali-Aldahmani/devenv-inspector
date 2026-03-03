@@ -3,7 +3,7 @@
   <p>Inspect runtimes and manage global packages from your terminal — no GUI required.</p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-0.1.0-5a7af5?style=for-the-badge" alt="Version" />
+    <img src="https://img.shields.io/badge/version-0.2.0-5a7af5?style=for-the-badge" alt="Version" />
     <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge&logo=apple" alt="Platform" />
     <img src="https://img.shields.io/badge/license-MIT-44c98b?style=for-the-badge" alt="License" />
     <img src="https://img.shields.io/npm/v/devenv-inspector-cli?style=for-the-badge&logo=npm&color=cc3534" alt="npm" />
@@ -57,6 +57,8 @@ $ devenv list
   Conda       26.1.0
   Node.js     24.13.0
   npm         11.6.2
+  Yarn        1.22.22
+  pnpm        9.15.4
 ```
 
 ---
@@ -69,6 +71,8 @@ devenv packages                  # all packages
 devenv packages --runtime pip    # pip only
 devenv packages --runtime conda  # conda only
 devenv packages --runtime npm    # npm only
+devenv packages --runtime yarn   # yarn only
+devenv packages --runtime pnpm   # pnpm only
 ```
 
 ```
@@ -93,6 +97,8 @@ Uninstall a package with a confirmation prompt.
 devenv uninstall requests --runtime pip
 devenv uninstall numpy --runtime conda
 devenv uninstall electron --runtime npm
+devenv uninstall create-react-app --runtime yarn
+devenv uninstall typescript --runtime pnpm
 ```
 
 ```
@@ -112,6 +118,8 @@ devenv info python
 devenv info conda
 devenv info node
 devenv info npm
+devenv info yarn
+devenv info pnpm
 ```
 
 ```
