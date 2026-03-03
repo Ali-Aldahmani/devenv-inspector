@@ -18,9 +18,28 @@
 
 ## Install
 
+### via npm
 ```bash
 npm install -g devenv-inspector-cli
 ```
+
+### via Docker
+No Node.js or Python required — just Docker:
+
+```bash
+# Pull and run
+docker run --rm ghcr.io/ali-aldahmani/devenv-inspector-cli list
+docker run --rm ghcr.io/ali-aldahmani/devenv-inspector-cli packages
+docker run --rm ghcr.io/ali-aldahmani/devenv-inspector-cli info python
+
+# Or build locally from source
+git clone https://github.com/Ali-Aldahmani/devenv-inspector.git
+cd devenv-inspector/cli
+docker build -t devenv-inspector-cli .
+docker run --rm devenv-inspector-cli list
+```
+
+> **Note:** Docker runs in an isolated container — it shows packages installed inside the image, not on your host machine. Use the npm install for inspecting your own machine.
 
 ---
 
