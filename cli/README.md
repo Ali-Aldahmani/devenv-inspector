@@ -1,22 +1,25 @@
 <div align="center">
   <h1>devenv-inspector-cli</h1>
-  <p>CLI companion to <a href="..">DevEnv Inspector</a> — inspect runtimes and manage global packages from your terminal.</p>
+  <p>Inspect runtimes and manage global packages from your terminal — no GUI required.</p>
 
   <p>
     <img src="https://img.shields.io/badge/version-0.1.0-5a7af5?style=for-the-badge" alt="Version" />
     <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge&logo=apple" alt="Platform" />
     <img src="https://img.shields.io/badge/license-MIT-44c98b?style=for-the-badge" alt="License" />
+    <img src="https://img.shields.io/npm/v/devenv-inspector-cli?style=for-the-badge&logo=npm&color=cc3534" alt="npm" />
   </p>
+
+  <img src="https://raw.githubusercontent.com/Ali-Aldahmani/devenv-inspector/main/cli/media/screenshot-cli.png" alt="devenv-inspector-cli screenshot" width="720" />
 </div>
+
+> Prefer a desktop GUI? Check out **[DevEnv Inspector](https://github.com/Ali-Aldahmani/devenv-inspector)** — the same features in a native macOS window.
 
 ---
 
 ## Install
 
 ```bash
-# From the cli/ directory
-npm install
-npm link        # makes `devenv` available globally
+npm install -g devenv-inspector-cli
 ```
 
 ---

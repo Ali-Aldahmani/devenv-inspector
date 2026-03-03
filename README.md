@@ -10,6 +10,9 @@
     <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge&logo=apple" alt="Platform" />
     <img src="https://img.shields.io/badge/license-MIT-44c98b?style=for-the-badge" alt="License" />
     <img src="https://img.shields.io/badge/open%20source-%E2%9D%A4-e05454?style=for-the-badge" alt="Open Source" />
+    <a href="https://www.npmjs.com/package/devenv-inspector-cli">
+      <img src="https://img.shields.io/npm/v/devenv-inspector-cli?style=for-the-badge&logo=npm&color=cc3534" alt="npm CLI" />
+    </a>
   </p>
 
   <p>
@@ -45,6 +48,26 @@ Developers who work across Python, Node.js, and Conda constantly switch between 
 - **Filter by manager** — quickly scope the list to pip / conda / npm
 - **Graceful fallbacks** — missing runtimes show "Not Installed" and hide irrelevant packages
 - **No internet required** — everything runs locally against your machine
+
+---
+
+## CLI Companion
+
+Prefer the terminal? The same functionality is available as a standalone npm package:
+
+```bash
+npm install -g devenv-inspector-cli
+```
+
+```bash
+devenv list                        # show all runtimes
+devenv packages                    # list all global packages
+devenv packages --runtime pip      # filter by manager
+devenv uninstall numpy --runtime conda
+devenv info python
+```
+
+> Source lives in [`cli/`](./cli) — same repo, zero Electron.
 
 ---
 
