@@ -1,12 +1,8 @@
 import { ipcMain } from 'electron'
-import { execFile } from 'child_process'
-import { promisify } from 'util'
 import { detectRuntimes } from './detectors.js'
 import { getAllPackages } from './parsers.js'
+import { runInShell } from './shell.js'
 
-const execFileAsync = promisify(execFile)
-
-// Only allow valid package name characters to prevent command injection
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
 
 let cachedRuntimes = null
@@ -30,9 +26,9 @@ export function registerIpcHandlers() {
     }
 
     const commandMap = {
-      pip: ['pip', ['uninstall', name, '-y']],
-      conda: ['conda', ['remove', name, '-y']],
-      npm: ['npm', ['uninstall', '-g', name]]
+      pip:   ['python3', ['-m', 'pip', 'uninstall', name, '-y']],
+      conda: ['conda',   ['remove', name, '-y']],
+      npm:   ['npm',     ['uninstall', '-g', name]]
     }
 
     const entry = commandMap[manager]
@@ -42,7 +38,7 @@ export function registerIpcHandlers() {
 
     const [cmd, args] = entry
     try {
-      await execFileAsync(cmd, args, { timeout: 60000 })
+      await runInShell(cmd, args, { timeout: 60000 })
       return { success: true }
     } catch (err) {
       const message = err.stderr || err.message || 'Unknown error'

@@ -1,12 +1,8 @@
-import { execFile } from 'child_process'
-import { promisify } from 'util'
+import { runInShell } from './shell.js'
 
-const execFileAsync = promisify(execFile)
-
-async function runCommand(cmd, args) {
+async function tryCommand(cmd, args) {
   try {
-    const { stdout } = await execFileAsync(cmd, args, { timeout: 10000 })
-    return stdout.trim()
+    return await runInShell(cmd, args, { timeout: 10000 })
   } catch {
     return null
   }
@@ -14,26 +10,26 @@ async function runCommand(cmd, args) {
 
 export async function detectRuntimes() {
   const [pythonOut, condaOut, nodeOut, npmOut] = await Promise.all([
-    runCommand('python3', ['--version']).then(
-      (out) => out || runCommand('python', ['--version'])
+    tryCommand('python3', ['--version']).then(
+      (out) => out || tryCommand('python', ['--version'])
     ),
-    runCommand('conda', ['--version']),
-    runCommand('node', ['--version']),
-    runCommand('npm', ['--version'])
+    tryCommand('conda', ['--version']),
+    tryCommand('node', ['--version']),
+    tryCommand('npm', ['--version'])
   ])
 
   return {
     python: pythonOut
-      ? { installed: true, version: pythonOut.replace(/^Python\s+/i, '') }
+      ? { installed: true, version: pythonOut.trim().replace(/^Python\s+/i, '') }
       : { installed: false, version: null },
     conda: condaOut
-      ? { installed: true, version: condaOut.replace(/^conda\s+/i, '') }
+      ? { installed: true, version: condaOut.trim().replace(/^conda\s+/i, '') }
       : { installed: false, version: null },
     node: nodeOut
-      ? { installed: true, version: nodeOut.replace(/^v/, '') }
+      ? { installed: true, version: nodeOut.trim().replace(/^v/, '') }
       : { installed: false, version: null },
     npm: npmOut
-      ? { installed: true, version: npmOut }
+      ? { installed: true, version: npmOut.trim() }
       : { installed: false, version: null }
   }
 }

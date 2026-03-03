@@ -1,11 +1,8 @@
-import { execFile } from 'child_process'
-import { promisify } from 'util'
+import { runInShell } from './shell.js'
 
-const execFileAsync = promisify(execFile)
-
-async function runJson(cmd, args) {
+async function runJson(cmd, args, options = {}) {
   try {
-    const { stdout } = await execFileAsync(cmd, args, { timeout: 30000 })
+    const stdout = await runInShell(cmd, args, options)
     return JSON.parse(stdout)
   } catch (err) {
     console.error(`[parsers] ${cmd} failed:`, err.message)
@@ -14,25 +11,24 @@ async function runJson(cmd, args) {
 }
 
 async function getPipPackages() {
-  // pip list --format=json returns [{name, version}]
-  const data = await runJson('pip', ['list', '--format=json'])
+  // Use `python3 -m pip` — more reliable than hunting for a `pip` binary in PATH
+  const data = await runJson('python3', ['-m', 'pip', 'list', '--format=json'], { timeout: 30000 })
   if (!Array.isArray(data)) return []
   return data.map((p) => ({ name: p.name, version: p.version, manager: 'pip' }))
 }
 
 async function getCondaPackages() {
-  // conda list --json returns [{name, version, ...}]
-  const data = await runJson('conda', ['list', '--json'])
+  const data = await runJson('conda', ['list', '--json'], { timeout: 30000 })
   if (!Array.isArray(data)) return []
   return data.map((p) => ({ name: p.name, version: p.version, manager: 'conda' }))
 }
 
 async function getNpmPackages() {
-  // npm list -g --depth=0 --json returns {dependencies: {pkgName: {version}}}
   try {
-    const { stdout } = await execFileAsync('npm', ['list', '-g', '--depth=0', '--json'], {
-      timeout: 30000
-    })
+    const stdout = await runInShell(
+      'npm', ['list', '-g', '--depth=0', '--json'],
+      { timeout: 30000, allowNonZero: true }
+    )
     const data = JSON.parse(stdout)
     const deps = data.dependencies || {}
     return Object.entries(deps).map(([name, info]) => ({
@@ -41,37 +37,17 @@ async function getNpmPackages() {
       manager: 'npm'
     }))
   } catch (err) {
-    // npm exits non-zero if there are peer dep issues but still outputs valid JSON
-    if (err.stdout) {
-      try {
-        const data = JSON.parse(err.stdout)
-        const deps = data.dependencies || {}
-        return Object.entries(deps).map(([name, info]) => ({
-          name,
-          version: info.version || 'unknown',
-          manager: 'npm'
-        }))
-      } catch {
-        // ignore
-      }
-    }
     console.error('[parsers] npm list failed:', err.message)
     return []
   }
 }
 
 export async function getAllPackages(runtimes) {
-  const tasks = []
-
-  if (runtimes.python?.installed) tasks.push(getPipPackages())
-  else tasks.push(Promise.resolve([]))
-
-  if (runtimes.conda?.installed) tasks.push(getCondaPackages())
-  else tasks.push(Promise.resolve([]))
-
-  if (runtimes.npm?.installed) tasks.push(getNpmPackages())
-  else tasks.push(Promise.resolve([]))
-
+  const tasks = [
+    runtimes.python?.installed ? getPipPackages()   : Promise.resolve([]),
+    runtimes.conda?.installed  ? getCondaPackages() : Promise.resolve([]),
+    runtimes.npm?.installed    ? getNpmPackages()   : Promise.resolve([])
+  ]
   const [pip, conda, npm] = await Promise.all(tasks)
   return [...pip, ...conda, ...npm]
 }
