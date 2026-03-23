@@ -20,6 +20,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('env-create-progress', listener)
     return () => ipcRenderer.removeListener('env-create-progress', listener)
   },
+  onMenuAction: (handler) => {
+    const listener = (_event, payload) => handler(payload)
+    ipcRenderer.on('menu-action', listener)
+    return () => ipcRenderer.removeListener('menu-action', listener)
+  },
   uninstallPackage: (name, manager) =>
     ipcRenderer.invoke('uninstall-package', { name, manager }),
   upgradePackage: (name, manager) =>

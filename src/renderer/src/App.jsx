@@ -28,8 +28,10 @@ function mergePackagesWithOutdated(packages, outdatedRows) {
 export default function App() {
   const [runtimes, setRuntimes] = useState(null)
   const [packages, setPackages] = useState([])
+  const [visiblePackages, setVisiblePackages] = useState([])
   const [ports, setPorts] = useState([])
   const [environments, setEnvironments] = useState([])
+  const [visibleEnvironments, setVisibleEnvironments] = useState([])
   const [scanFolders, setScanFolders] = useState([])
   const [envLoading, setEnvLoading] = useState(false)
   const [showCreateEnvModal, setShowCreateEnvModal] = useState(false)
@@ -100,6 +102,37 @@ export default function App() {
     setExportToast({ message, type })
     setTimeout(() => setExportToast(null), 3000)
   }
+
+  const runExportFromMenu = useCallback(async (format) => {
+    const isEnvTab = activeTab === 'environments'
+    const result = isEnvTab
+      ? await window.electronAPI.exportEnvironments(format, visibleEnvironments)
+      : await window.electronAPI.exportPackages(format, visiblePackages)
+    if (result?.success && result?.path) {
+      const filename = result.path.split(/[\\/]/).pop()
+      showExportToast(`Saved to ${filename}`, 'success')
+    } else {
+      showExportToast('Export failed', 'error')
+    }
+  }, [activeTab, visibleEnvironments, visiblePackages])
+
+  useEffect(() => {
+    const unsub = window.electronAPI.onMenuAction(async ({ action }) => {
+      if (action === 'new-environment') {
+        setActiveTab('environments')
+        setShowCreateEnvModal(true)
+        return
+      }
+      if (action === 'export-json') {
+        await runExportFromMenu('json')
+        return
+      }
+      if (action === 'export-csv') {
+        await runExportFromMenu('csv')
+      }
+    })
+    return () => unsub?.()
+  }, [runExportFromMenu])
 
   const handleUninstall = async (name, manager) => {
     const result = await window.electronAPI.uninstallPackage(name, manager)
@@ -258,6 +291,7 @@ export default function App() {
             onUninstall={handleUninstall}
             onUpgrade={handleUpgrade}
             onExportToast={showExportToast}
+            onFilteredChange={setVisiblePackages}
           />
         </section>
       )}
@@ -283,6 +317,7 @@ export default function App() {
             onRemoveFolder={handleRemoveScanFolder}
             onNewEnvironment={() => setShowCreateEnvModal(true)}
             onExportToast={showExportToast}
+            onFilteredChange={setVisibleEnvironments}
           />
         </section>
       )}

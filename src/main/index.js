@@ -1,7 +1,7 @@
 import './runtimes/builtins.js'
 import './runtimes/nvm.js'
 import './runtimes/pyenv.js'
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, Menu } from 'electron'
 import { join } from 'path'
 import { registerIpcHandlers } from './ipcHandlers.js'
 
@@ -26,6 +26,34 @@ function createWindow() {
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  const menu = Menu.buildFromTemplate([
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'New Environment',
+          click: () => win.webContents.send('menu-action', { action: 'new-environment' })
+        },
+        { type: 'separator' },
+        { role: 'quit', label: 'Exit' }
+      ]
+    },
+    {
+      label: 'Export',
+      submenu: [
+        {
+          label: 'Export as JSON',
+          click: () => win.webContents.send('menu-action', { action: 'export-json' })
+        },
+        {
+          label: 'Export as CSV',
+          click: () => win.webContents.send('menu-action', { action: 'export-csv' })
+        }
+      ]
+    }
+  ])
+  Menu.setApplicationMenu(menu)
 }
 
 app.whenReady().then(() => {

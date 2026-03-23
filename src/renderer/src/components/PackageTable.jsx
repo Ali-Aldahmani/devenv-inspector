@@ -7,7 +7,8 @@ export default function PackageTable({
   runtimes,
   onUninstall,
   onUpgrade,
-  onExportToast
+  onExportToast,
+  onFilteredChange
 }) {
   const [search, setSearch] = useState('')
   const [filterManager, setFilterManager] = useState('all')
@@ -16,6 +17,7 @@ export default function PackageTable({
   const [upgrading, setUpgrading] = useState(null)
   const [showExportMenu, setShowExportMenu] = useState(false)
   const exportRef = useRef(null)
+  const lastFilteredSignatureRef = useRef('')
 
   useEffect(() => {
     const onDocClick = (e) => {
@@ -33,6 +35,13 @@ export default function PackageTable({
       (filterManager === 'updates' ? p.hasUpdate : p.manager === filterManager)
     return matchesSearch && matchesManager
   })
+
+  useEffect(() => {
+    const signature = filtered.map((p) => `${p.manager}/${p.name}@${p.version}`).join('|')
+    if (signature === lastFilteredSignatureRef.current) return
+    lastFilteredSignatureRef.current = signature
+    onFilteredChange?.(filtered)
+  }, [filtered, onFilteredChange])
 
   const handleDeleteClick = (pkg) => {
     setPendingPkg(pkg)

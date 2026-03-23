@@ -45,12 +45,14 @@ export default function EnvironmentsTable({
   onAddFolder,
   onRemoveFolder,
   onNewEnvironment,
-  onExportToast
+  onExportToast,
+  onFilteredChange
 }) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [showExportMenu, setShowExportMenu] = useState(false)
   const exportRef = useRef(null)
+  const lastFilteredSignatureRef = useRef('')
 
   const filtered = useMemo(() => {
     return (environments || []).filter((env) => {
@@ -62,6 +64,13 @@ export default function EnvironmentsTable({
       return matchesSearch && matchesType
     })
   }, [environments, search, typeFilter])
+
+  useEffect(() => {
+    const signature = filtered.map((e) => `${e.path}|${e.type}|${e.manager}|${e.modified}`).join('|')
+    if (signature === lastFilteredSignatureRef.current) return
+    lastFilteredSignatureRef.current = signature
+    onFilteredChange?.(filtered)
+  }, [filtered, onFilteredChange])
 
   useEffect(() => {
     const onDocClick = (e) => {
