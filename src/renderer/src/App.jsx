@@ -10,6 +10,9 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [activeTab, setActiveTab] = useState('packages')
+  const [theme, setTheme] = useState(
+    () => (document.documentElement.classList.contains('light-mode') ? 'light' : 'dark')
+  )
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -62,11 +65,25 @@ export default function App() {
     }
   }
 
+  const handleThemeToggle = () => {
+    const nextTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(nextTheme)
+    document.documentElement.classList.toggle('light-mode', nextTheme === 'light')
+    localStorage.setItem('devenv-theme', nextTheme)
+  }
+
   return (
     <div className="app">
       <header className="app-header">
         <h1 className="app-title">DevEnv Inspector</h1>
         <span className="app-version">v0.3.0</span>
+        <button
+          className="btn-theme-toggle"
+          onClick={handleThemeToggle}
+          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+        >
+          {theme === 'light' ? '🌙' : '☀️'}
+        </button>
         <button
           className="btn-refresh"
           onClick={loadData}
