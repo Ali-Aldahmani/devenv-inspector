@@ -8,6 +8,7 @@ import { detectEnvs } from './envDetector.js'
 import path from 'path'
 import { readFile, writeFile } from 'fs/promises'
 import { createEnv, getPopularPackages, installPackages } from './envCreator.js'
+import { saveFile, toCSV, toJSON } from './exporter.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
 
@@ -177,6 +178,54 @@ export function registerIpcHandlers() {
 
   ipcMain.handle('get-popular-packages', async (_event, envType) => {
     return getPopularPackages(envType)
+  })
+
+  ipcMain.handle('export-packages', async (_event, { format, data = [] }) => {
+    if (format === 'json') {
+      return saveFile(
+        toJSON(data),
+        'packages-export.json',
+        [{ name: 'JSON', extensions: ['json'] }]
+      )
+    }
+    if (format === 'csv') {
+      const csv = toCSV(data, [
+        { key: 'name', label: 'Name' },
+        { key: 'version', label: 'Version' },
+        { key: 'manager', label: 'Manager' }
+      ])
+      return saveFile(
+        csv,
+        'packages-export.csv',
+        [{ name: 'CSV', extensions: ['csv'] }]
+      )
+    }
+    return { success: false, path: null }
+  })
+
+  ipcMain.handle('export-environments', async (_event, { format, data = [] }) => {
+    if (format === 'json') {
+      return saveFile(
+        toJSON(data),
+        'environments-export.json',
+        [{ name: 'JSON', extensions: ['json'] }]
+      )
+    }
+    if (format === 'csv') {
+      const csv = toCSV(data, [
+        { key: 'name', label: 'Name' },
+        { key: 'path', label: 'Path' },
+        { key: 'type', label: 'Type' },
+        { key: 'manager', label: 'Manager' },
+        { key: 'modified', label: 'Last Modified' }
+      ])
+      return saveFile(
+        csv,
+        'environments-export.csv',
+        [{ name: 'CSV', extensions: ['csv'] }]
+      )
+    }
+    return { success: false, path: null }
   })
 
   ipcMain.handle('open-path', async (_event, targetPath) => {

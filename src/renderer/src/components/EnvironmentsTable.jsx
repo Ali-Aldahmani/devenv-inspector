@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 function formatRelativeTime(isoDate) {
   const then = new Date(isoDate).getTime()
@@ -44,10 +44,13 @@ export default function EnvironmentsTable({
   scanFolders,
   onAddFolder,
   onRemoveFolder,
-  onNewEnvironment
+  onNewEnvironment,
+  onExportToast
 }) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const exportRef = useRef(null)
 
   const filtered = useMemo(() => {
     return (environments || []).filter((env) => {
@@ -59,6 +62,25 @@ export default function EnvironmentsTable({
       return matchesSearch && matchesType
     })
   }, [environments, search, typeFilter])
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (!exportRef.current?.contains(e.target)) setShowExportMenu(false)
+    }
+    document.addEventListener('click', onDocClick)
+    return () => document.removeEventListener('click', onDocClick)
+  }, [])
+
+  const handleExport = async (format) => {
+    setShowExportMenu(false)
+    const result = await window.electronAPI.exportEnvironments(format, filtered)
+    if (result?.success && result?.path) {
+      const filename = result.path.split(/[\\/]/).pop()
+      onExportToast?.(`Saved to ${filename}`, 'success')
+    } else {
+      onExportToast?.('Export failed', 'error')
+    }
+  }
 
   return (
     <div className="package-table-wrapper">
@@ -85,6 +107,21 @@ export default function EnvironmentsTable({
           {filtered.length} environment{filtered.length !== 1 ? 's' : ''}
         </span>
         <div className="env-toolbar-actions">
+          <div className="export-dropdown" ref={exportRef}>
+            <button className="btn-add-folder" onClick={() => setShowExportMenu((v) => !v)}>
+              ↓ Export
+            </button>
+            {showExportMenu && (
+              <div className="export-menu">
+                <button className="export-item" onClick={() => handleExport('json')}>
+                  Export as JSON
+                </button>
+                <button className="export-item" onClick={() => handleExport('csv')}>
+                  Export as CSV
+                </button>
+              </div>
+            )}
+          </div>
           <button className="btn-add-folder" onClick={onAddFolder}>
             + Add Folder
           </button>

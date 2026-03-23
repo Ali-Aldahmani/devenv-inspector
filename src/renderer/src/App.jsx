@@ -35,6 +35,7 @@ export default function App() {
   const [showCreateEnvModal, setShowCreateEnvModal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
+  const [exportToast, setExportToast] = useState(null)
   const [activeTab, setActiveTab] = useState('packages')
   const [theme, setTheme] = useState(
     () => (document.documentElement.classList.contains('light-mode') ? 'light' : 'dark')
@@ -93,6 +94,11 @@ export default function App() {
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3500)
+  }
+
+  const showExportToast = (message, type = 'success') => {
+    setExportToast({ message, type })
+    setTimeout(() => setExportToast(null), 3000)
   }
 
   const handleUninstall = async (name, manager) => {
@@ -184,7 +190,7 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <h1 className="app-title">DevEnv Inspector</h1>
-        <span className="app-version">v0.3.0</span>
+        <span className="app-version">v0.5.0</span>
         <button
           className="btn-theme-toggle"
           onClick={handleThemeToggle}
@@ -251,6 +257,7 @@ export default function App() {
             runtimes={runtimes}
             onUninstall={handleUninstall}
             onUpgrade={handleUpgrade}
+            onExportToast={showExportToast}
           />
         </section>
       )}
@@ -275,6 +282,7 @@ export default function App() {
             onAddFolder={handleAddScanFolder}
             onRemoveFolder={handleRemoveScanFolder}
             onNewEnvironment={() => setShowCreateEnvModal(true)}
+            onExportToast={showExportToast}
           />
         </section>
       )}
@@ -290,6 +298,11 @@ export default function App() {
       {toast && (
         <div className={`toast toast-${toast.type}`}>
           {toast.message}
+        </div>
+      )}
+      {exportToast && (
+        <div className={`export-toast export-toast-${exportToast.type}`}>
+          {exportToast.message}
         </div>
       )}
     </div>

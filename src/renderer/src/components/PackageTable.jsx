@@ -1,12 +1,29 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import ConfirmDialog from './ConfirmDialog'
 
-export default function PackageTable({ packages, loading, runtimes, onUninstall, onUpgrade }) {
+export default function PackageTable({
+  packages,
+  loading,
+  runtimes,
+  onUninstall,
+  onUpgrade,
+  onExportToast
+}) {
   const [search, setSearch] = useState('')
   const [filterManager, setFilterManager] = useState('all')
   const [pendingPkg, setPendingPkg] = useState(null)
   const [uninstalling, setUninstalling] = useState(null)
   const [upgrading, setUpgrading] = useState(null)
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const exportRef = useRef(null)
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (!exportRef.current?.contains(e.target)) setShowExportMenu(false)
+    }
+    document.addEventListener('click', onDocClick)
+    return () => document.removeEventListener('click', onDocClick)
+  }, [])
 
   const updatesCount = packages.filter((p) => p.hasUpdate).length
   const filtered = packages.filter((p) => {
@@ -36,6 +53,17 @@ export default function PackageTable({ packages, loading, runtimes, onUninstall,
     setUpgrading(key)
     await onUpgrade(pkg.name, pkg.manager)
     setUpgrading(null)
+  }
+
+  const handleExport = async (format) => {
+    setShowExportMenu(false)
+    const result = await window.electronAPI.exportPackages(format, filtered)
+    if (result?.success && result?.path) {
+      const filename = result.path.split(/[\\/]/).pop()
+      onExportToast?.(`Saved to ${filename}`, 'success')
+    } else {
+      onExportToast?.('Export failed', 'error')
+    }
   }
 
   return (
@@ -70,6 +98,21 @@ export default function PackageTable({ packages, loading, runtimes, onUninstall,
         <span className="package-count">
           {filtered.length} package{filtered.length !== 1 ? 's' : ''}
         </span>
+        <div className="export-dropdown" ref={exportRef}>
+          <button className="btn-add-folder" onClick={() => setShowExportMenu((v) => !v)}>
+            ↓ Export
+          </button>
+          {showExportMenu && (
+            <div className="export-menu">
+              <button className="export-item" onClick={() => handleExport('json')}>
+                Export as JSON
+              </button>
+              <button className="export-item" onClick={() => handleExport('csv')}>
+                Export as CSV
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {loading ? (
