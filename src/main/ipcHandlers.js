@@ -7,6 +7,7 @@ import { getActivePorts, killProcess } from './ports.js'
 import { detectEnvs } from './envDetector.js'
 import path from 'path'
 import { readFile, writeFile } from 'fs/promises'
+import { createEnv, getPopularPackages, installPackages } from './envCreator.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
 
@@ -159,6 +160,23 @@ export function registerIpcHandlers() {
     } catch {
       return []
     }
+  })
+
+  ipcMain.handle('create-env', async (_event, { targetPath, type, pythonVersion = null }) => {
+    return createEnv(targetPath, type, pythonVersion)
+  })
+
+  ipcMain.handle('install-packages', async (event, { targetPath, envType, packages = [] }) => {
+    return installPackages(
+      targetPath,
+      envType,
+      packages,
+      (line, level = 'info') => event.sender.send('env-create-progress', { line, level })
+    )
+  })
+
+  ipcMain.handle('get-popular-packages', async (_event, envType) => {
+    return getPopularPackages(envType)
   })
 
   ipcMain.handle('open-path', async (_event, targetPath) => {

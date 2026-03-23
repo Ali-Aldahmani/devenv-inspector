@@ -43,7 +43,8 @@ export default function EnvironmentsTable({
   onOpen,
   scanFolders,
   onAddFolder,
-  onRemoveFolder
+  onRemoveFolder,
+  onNewEnvironment
 }) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -83,9 +84,14 @@ export default function EnvironmentsTable({
         <span className="package-count">
           {filtered.length} environment{filtered.length !== 1 ? 's' : ''}
         </span>
-        <button className="btn-add-folder" onClick={onAddFolder}>
-          + Add Folder
-        </button>
+        <div className="env-toolbar-actions">
+          <button className="btn-add-folder" onClick={onAddFolder}>
+            + Add Folder
+          </button>
+          <button className="btn-add-folder" onClick={onNewEnvironment}>
+            + New Environment
+          </button>
+        </div>
       </div>
       {Array.isArray(scanFolders) && scanFolders.length > 0 && (
         <div className="scan-folder-tags">

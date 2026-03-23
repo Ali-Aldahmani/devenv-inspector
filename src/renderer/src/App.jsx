@@ -3,6 +3,7 @@ import RuntimeCard from './components/RuntimeCard'
 import PackageTable from './components/PackageTable'
 import PortsTable from './components/PortsTable'
 import EnvironmentsTable from './components/EnvironmentsTable'
+import CreateEnvironmentModal from './components/CreateEnvironmentModal'
 
 function mergePackagesWithOutdated(packages, outdatedRows) {
   const byKey = new Map(
@@ -31,6 +32,7 @@ export default function App() {
   const [environments, setEnvironments] = useState([])
   const [scanFolders, setScanFolders] = useState([])
   const [envLoading, setEnvLoading] = useState(false)
+  const [showCreateEnvModal, setShowCreateEnvModal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [activeTab, setActiveTab] = useState('packages')
@@ -155,6 +157,10 @@ export default function App() {
     })()
   }
 
+  const handleCreateEnvSuccess = async () => {
+    await loadEnvironments(scanFolders)
+  }
+
   const handleAddScanFolder = async () => {
     const selected = await window.electronAPI.selectFolder()
     if (!selected) return
@@ -268,8 +274,17 @@ export default function App() {
             scanFolders={scanFolders}
             onAddFolder={handleAddScanFolder}
             onRemoveFolder={handleRemoveScanFolder}
+            onNewEnvironment={() => setShowCreateEnvModal(true)}
           />
         </section>
+      )}
+
+      {showCreateEnvModal && (
+        <CreateEnvironmentModal
+          scanFolders={scanFolders}
+          onClose={() => setShowCreateEnvModal(false)}
+          onSuccess={handleCreateEnvSuccess}
+        />
       )}
 
       {toast && (
