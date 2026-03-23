@@ -9,7 +9,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1100,
     height: 750,
-    minWidth: 800,
+    minWidth: 900,
     minHeight: 600,
     title: 'DevEnv Inspector',
     webPreferences: {

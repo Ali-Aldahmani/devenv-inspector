@@ -87,10 +87,14 @@ body {
 /* ── Runtime Cards ── */
 .runtimes-row {
   display: flex;
+  flex-wrap: nowrap;
   gap: 12px;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
 
 .runtime-card {
@@ -101,7 +105,8 @@ body {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 16px;
-  flex: 1;
+  flex: 0 0 170px;
+  min-width: 170px;
 }
 
 .runtime-label {
