@@ -95,12 +95,13 @@ body {
 
 .runtimes-row {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   padding: 12px 20px;
   border-bottom: 1px solid var(--border-soft);
   background: var(--bg);
   flex-shrink: 0;
-  overflow-x: auto;
+  flex-wrap: wrap;
+  overflow-x: visible;
   overflow-y: hidden;
 }
 
@@ -113,8 +114,8 @@ body {
   border: 1px solid #252830;
   border-radius: 10px;
   padding: 10px 14px;
-  min-width: 165px;
-  flex: 0 0 165px;
+  min-width: 110px;
+  flex: 1 1 110px;
   border-top: 2px solid #2a2c32;
 }
 
