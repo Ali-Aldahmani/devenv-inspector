@@ -1,9 +1,10 @@
-import { ipcMain } from 'electron'
+import { ipcMain, shell } from 'electron'
 import { detectRuntimes } from './detectors.js'
 import { getAllPackages } from './parsers.js'
 import { runInShell } from './shell.js'
 import { getRegisteredRuntimes, getRuntime } from './registry.js'
 import { getActivePorts, killProcess } from './ports.js'
+import { detectEnvs } from './envDetector.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
 
@@ -104,6 +105,27 @@ export function registerIpcHandlers() {
 
   ipcMain.handle('get-ports', async () => {
     return getActivePorts()
+  })
+
+  ipcMain.handle('get-environments', async () => {
+    try {
+      return await detectEnvs()
+    } catch {
+      return []
+    }
+  })
+
+  ipcMain.handle('open-path', async (_event, targetPath) => {
+    try {
+      if (!targetPath || typeof targetPath !== 'string') {
+        return { success: false, error: 'Invalid path.' }
+      }
+      const error = await shell.openPath(targetPath)
+      if (error) return { success: false, error }
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: err.message || 'Unknown error' }
+    }
   })
 
   ipcMain.handle('kill-port', async (_event, pid) => {

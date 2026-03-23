@@ -374,6 +374,18 @@ body {
   transition: all 0.15s ease;
 }
 
+.btn-open-row {
+  font-family: var(--mono);
+  font-size: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  color: var(--text-header-col);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
 .col-action {
   display: flex;
   align-items: center;
@@ -401,6 +413,11 @@ body {
   color: #e05454;
   border-color: #4a1a1a;
   background: #1e1212;
+}
+
+.btn-open-row:hover {
+  color: var(--text-primary);
+  border-color: var(--border-main);
 }
 
 .btn-delete-row:disabled,
@@ -453,10 +470,16 @@ body {
   color: #4a9eda;
 }
 
-.section-tab:first-child .tab-count {
-  border-color: #1e4028;
-  background: #1a2e1e;
+.tab-count-env {
+  border-color: #1e4038;
+  background: #1a2e2a;
   color: #2ecc71;
+}
+
+.tab-count-ports {
+  border-color: #1e3d56;
+  background: #1e2c3a;
+  color: #4a9eda;
 }
 
 .protocol-badge {
@@ -486,6 +509,41 @@ body {
   font-size: 12px;
   color: var(--text-version);
 }
+
+.env-table {
+  table-layout: fixed;
+}
+
+.env-name {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.env-path {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+}
+
+.env-manager,
+.env-modified {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.env-type-python { background: #1e2a3a; color: #4a9eda; border: 1px solid #1e3a56; }
+.env-type-conda { background: #1a2e1a; color: #2ecc71; border: 1px solid #1e4028; }
+.env-type-node { background: #2a1e10; color: #f09220; border: 1px solid #4a2e10; }
+.env-type-poetry { background: #1e1a2e; color: #a78bfa; border: 1px solid #2e1a4a; }
+.env-type-pipenv { background: #1a2e2a; color: #2dd4bf; border: 1px solid #1a3e38; }
 
 .dialog-overlay {
   position: fixed;

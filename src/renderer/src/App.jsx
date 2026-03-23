@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import RuntimeCard from './components/RuntimeCard'
 import PackageTable from './components/PackageTable'
 import PortsTable from './components/PortsTable'
+import EnvironmentsTable from './components/EnvironmentsTable'
 
 function mergePackagesWithOutdated(packages, outdatedRows) {
   const byKey = new Map(
@@ -27,6 +28,8 @@ export default function App() {
   const [runtimes, setRuntimes] = useState(null)
   const [packages, setPackages] = useState([])
   const [ports, setPorts] = useState([])
+  const [environments, setEnvironments] = useState([])
+  const [envLoading, setEnvLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [activeTab, setActiveTab] = useState('packages')
@@ -34,7 +37,19 @@ export default function App() {
     () => (document.documentElement.classList.contains('light-mode') ? 'light' : 'dark')
   )
 
-  const loadData = useCallback(async () => {
+  const loadEnvironments = useCallback(async () => {
+    setEnvLoading(true)
+    try {
+      const envs = await window.electronAPI.getEnvironments()
+      setEnvironments(Array.isArray(envs) ? envs : [])
+    } catch {
+      setEnvironments([])
+    } finally {
+      setEnvLoading(false)
+    }
+  }, [])
+
+  const loadData = useCallback(async ({ includeEnvironments = false } = {}) => {
     setLoading(true)
     try {
       const [rt, pkgs, outdated, pts] = await Promise.all([
@@ -46,12 +61,15 @@ export default function App() {
       setRuntimes(rt)
       setPackages(mergePackagesWithOutdated(pkgs, outdated))
       setPorts(pts)
+      if (includeEnvironments) {
+        await loadEnvironments()
+      }
     } catch (err) {
       console.error('Failed to load data:', err)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [loadEnvironments])
 
   useEffect(() => {
     loadData()
@@ -109,6 +127,18 @@ export default function App() {
     localStorage.setItem('devenv-theme', nextTheme)
   }
 
+  const handleOpenPath = async (targetPath) => {
+    const result = await window.electronAPI.openPath(targetPath)
+    if (!result?.success) {
+      showToast(`Failed to open path: ${result?.error || 'Unknown error'}`, 'error')
+    }
+  }
+
+  const handleOpenEnvironmentsTab = () => {
+    setActiveTab('environments')
+    loadEnvironments()
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -123,7 +153,7 @@ export default function App() {
         </button>
         <button
           className="btn-refresh"
-          onClick={loadData}
+          onClick={() => loadData({ includeEnvironments: activeTab === 'environments' })}
           disabled={loading}
           title="Refresh all data"
         >
@@ -157,13 +187,18 @@ export default function App() {
           Packages
         </button>
         <button
+          className={`section-tab ${activeTab === 'environments' ? 'active' : ''}`}
+          onClick={handleOpenEnvironmentsTab}
+        >
+          Environments
+          <span className="tab-count tab-count-env">{environments.length}</span>
+        </button>
+        <button
           className={`section-tab ${activeTab === 'ports' ? 'active' : ''}`}
           onClick={() => setActiveTab('ports')}
         >
           Active Ports
-          {!loading && ports.length > 0 && (
-            <span className="tab-count">{ports.length}</span>
-          )}
+          {!loading && ports.length > 0 && <span className="tab-count tab-count-ports">{ports.length}</span>}
         </button>
       </div>
 
@@ -185,6 +220,16 @@ export default function App() {
             ports={ports}
             loading={loading}
             onKill={handleKillPort}
+          />
+        </section>
+      )}
+
+      {activeTab === 'environments' && (
+        <section className="packages-section">
+          <EnvironmentsTable
+            environments={environments}
+            loading={envLoading}
+            onOpen={handleOpenPath}
           />
         </section>
       )}
