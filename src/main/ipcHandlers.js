@@ -9,6 +9,7 @@ import path from 'path'
 import { readFile, writeFile } from 'fs/promises'
 import { createEnv, getPopularPackages, installPackages } from './envCreator.js'
 import { saveFile, toCSV, toJSON } from './exporter.js'
+import { addDiagnostic, clearDiagnostics, getDiagnostics } from './diagnostics.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
 
@@ -64,6 +65,7 @@ export function registerIpcHandlers() {
     } catch (err) {
       const message = err.stderr || err.message || 'Unknown error'
       console.error(`[ipc] uninstall ${manager}/${name} failed:`, message)
+      addDiagnostic({ source: `uninstall ${manager}`, message: `Failed to uninstall ${name}`, details: message })
       return { success: false, error: message }
     }
   })
@@ -97,6 +99,7 @@ export function registerIpcHandlers() {
     } catch (err) {
       const message = err.stderr || err.message || 'Unknown error'
       console.error(`[ipc] upgrade ${manager}/${name} failed:`, message)
+      addDiagnostic({ source: `upgrade ${manager}`, message: `Failed to upgrade ${name}`, details: message })
       return { success: false, error: message }
     }
   })
@@ -135,6 +138,7 @@ export function registerIpcHandlers() {
     try {
       return await detectEnvs(extraPaths)
     } catch {
+      addDiagnostic({ source: 'get-environments', message: 'Failed to load environments', details: '' })
       return []
     }
   })
@@ -248,7 +252,14 @@ export function registerIpcHandlers() {
     } catch (err) {
       const message = err.message || 'Unknown error'
       console.error(`[ipc] kill-port pid=${pid} failed:`, message)
+      addDiagnostic({ source: 'kill-port', message: `Failed to kill PID ${pid}`, details: message })
       return { success: false, error: message }
     }
+  })
+
+  ipcMain.handle('get-diagnostics', async () => getDiagnostics())
+  ipcMain.handle('clear-diagnostics', async () => {
+    clearDiagnostics()
+    return { success: true }
   })
 }

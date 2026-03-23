@@ -647,6 +647,57 @@ body {
 .env-type-poetry { background: #1e1a2e; color: #a78bfa; border: 1px solid #2e1a4a; }
 .env-type-pipenv { background: #1a2e2a; color: #2dd4bf; border: 1px solid #1a3e38; }
 
+.diagnostics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.diagnostic-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.diagnostic-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.diagnostic-source {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #4a9eda;
+}
+
+.diagnostic-time {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.diagnostic-message {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-version);
+}
+
+.diagnostic-details {
+  margin-top: 8px;
+  background: #0a0b0d;
+  border: 1px solid var(--border-main);
+  border-radius: 6px;
+  padding: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #c8c9cc;
+  white-space: pre-wrap;
+}
+
 .create-env-overlay {
   position: fixed;
   inset: 0;

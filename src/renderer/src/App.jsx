@@ -4,6 +4,7 @@ import PackageTable from './components/PackageTable'
 import PortsTable from './components/PortsTable'
 import EnvironmentsTable from './components/EnvironmentsTable'
 import CreateEnvironmentModal from './components/CreateEnvironmentModal'
+import DiagnosticsPanel from './components/DiagnosticsPanel'
 
 function mergePackagesWithOutdated(packages, outdatedRows) {
   const byKey = new Map(
@@ -34,6 +35,20 @@ export default function App() {
   const [visibleEnvironments, setVisibleEnvironments] = useState([])
   const [scanFolders, setScanFolders] = useState([])
   const [envLoading, setEnvLoading] = useState(false)
+  const [diagnostics, setDiagnostics] = useState([])
+  const [diagLoading, setDiagLoading] = useState(false)
+  const loadDiagnostics = useCallback(async () => {
+    setDiagLoading(true)
+    try {
+      const rows = await window.electronAPI.getDiagnostics()
+      setDiagnostics(Array.isArray(rows) ? rows : [])
+    } catch {
+      setDiagnostics([])
+    } finally {
+      setDiagLoading(false)
+    }
+  }, [])
+
   const [showCreateEnvModal, setShowCreateEnvModal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
@@ -196,6 +211,25 @@ export default function App() {
     })()
   }
 
+  const handleOpenDiagnosticsTab = () => {
+    setActiveTab('diagnostics')
+    loadDiagnostics()
+  }
+  const handleClearDiagnostics = async () => {
+    await window.electronAPI.clearDiagnostics()
+    await loadDiagnostics()
+  }
+
+  const handleCopyDiagnostics = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text || '')
+      showToast('Diagnostics copied to clipboard.', 'success')
+    } catch {
+      showToast('Failed to copy diagnostics.', 'error')
+    }
+  }
+
+
   const handleCreateEnvSuccess = async () => {
     await loadEnvironments(scanFolders)
   }
@@ -280,6 +314,13 @@ export default function App() {
           Active Ports
           {!loading && ports.length > 0 && <span className="tab-count tab-count-ports">{ports.length}</span>}
         </button>
+        <button
+          className={`section-tab ${activeTab === 'diagnostics' ? 'active' : ''}`}
+          onClick={handleOpenDiagnosticsTab}
+        >
+          Diagnostics
+          {diagnostics.length > 0 && <span className="tab-count">{diagnostics.length}</span>}
+        </button>
       </div>
 
       {activeTab === 'packages' && (
@@ -320,6 +361,16 @@ export default function App() {
             onFilteredChange={setVisibleEnvironments}
           />
         </section>
+      )}
+
+      {activeTab === 'diagnostics' && (
+        <DiagnosticsPanel
+          logs={diagnostics}
+          loading={diagLoading}
+          onRefresh={loadDiagnostics}
+          onClear={handleClearDiagnostics}
+          onCopy={handleCopyDiagnostics}
+        />
       )}
 
       {showCreateEnvModal && (

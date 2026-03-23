@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPopularPackages: (envType) => ipcRenderer.invoke('get-popular-packages', envType),
   exportPackages: (format, data) => ipcRenderer.invoke('export-packages', { format, data }),
   exportEnvironments: (format, data) => ipcRenderer.invoke('export-environments', { format, data }),
+  getDiagnostics: () => ipcRenderer.invoke('get-diagnostics'),
+  clearDiagnostics: () => ipcRenderer.invoke('clear-diagnostics'),
   onEnvCreateProgress: (handler) => {
     const listener = (_event, payload) => handler(payload)
     ipcRenderer.on('env-create-progress', listener)

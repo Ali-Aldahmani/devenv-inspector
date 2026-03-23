@@ -1,6 +1,7 @@
 import os from 'os'
 import path from 'path'
 import { readdir, stat } from 'fs/promises'
+import { addDiagnostic } from './diagnostics.js'
 
 const TYPE_PRIORITY = {
   'Poetry env': 5,
@@ -33,6 +34,7 @@ async function listDirectories(parentPath) {
     const entries = await readdir(parentPath, { withFileTypes: true })
     return entries.filter((e) => e.isDirectory()).map((e) => path.join(parentPath, e.name))
   } catch {
+    addDiagnostic({ source: 'environment scan', message: 'Environment scanning failed', details: 'Unexpected scanner error' })
     return []
   }
 }

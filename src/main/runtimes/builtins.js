@@ -8,6 +8,7 @@
 
 import { runInShell } from '../shell.js'
 import { registerRuntime } from '../registry.js'
+import { addDiagnostic } from '../diagnostics.js'
 
 async function tryCommand(cmd, args) {
   try {
@@ -39,6 +40,7 @@ registerRuntime({
       return data.map((p) => ({ name: p.name, version: p.version }))
     } catch (err) {
       console.error('[builtins] pip list failed:', err.message)
+      addDiagnostic({ source: 'pip list', message: 'Failed to list pip packages', details: err.message })
       return []
     }
   },
@@ -58,6 +60,7 @@ registerRuntime({
       }))
     } catch (err) {
       console.error('[builtins] pip outdated failed:', err.message)
+      addDiagnostic({ source: 'pip outdated', message: 'Failed to detect pip updates', details: err.message })
       return []
     }
   },
@@ -83,6 +86,7 @@ registerRuntime({
       return data.map((p) => ({ name: p.name, version: p.version }))
     } catch (err) {
       console.error('[builtins] conda list failed:', err.message)
+      addDiagnostic({ source: 'conda list', message: 'Failed to list conda packages', details: err.message })
       return []
     }
   },
@@ -132,6 +136,7 @@ registerRuntime({
       }))
     } catch (err) {
       console.error('[builtins] npm list failed:', err.message)
+      addDiagnostic({ source: 'npm list', message: 'Failed to list npm packages', details: err.message })
       return []
     }
   },
@@ -149,6 +154,7 @@ registerRuntime({
       const hasStderr = Boolean((err.stderr || '').trim())
       if (hasStderr) {
         console.error('[builtins] npm outdated failed:', err.stderr || err.message)
+        addDiagnostic({ source: 'npm outdated', message: 'Failed to detect npm updates', details: err.stderr || err.message })
         return []
       }
 
@@ -201,6 +207,7 @@ registerRuntime({
       return []
     } catch (err) {
       console.error('[builtins] yarn list failed:', err.message)
+      addDiagnostic({ source: 'yarn list', message: 'Failed to list yarn packages', details: err.message })
       return []
     }
   },
@@ -227,6 +234,7 @@ registerRuntime({
       return []
     } catch (err) {
       console.error('[builtins] yarn outdated failed:', err.message)
+      addDiagnostic({ source: 'yarn outdated', message: 'Failed to detect yarn updates', details: err.message })
       return []
     }
   },
@@ -258,6 +266,7 @@ registerRuntime({
       }))
     } catch (err) {
       console.error('[builtins] pnpm list failed:', err.message)
+      addDiagnostic({ source: 'pnpm list', message: 'Failed to list pnpm packages', details: err.message })
       return []
     }
   },
@@ -300,6 +309,7 @@ registerRuntime({
         return parseOutdated(err.stdout)
       }
       console.error('[builtins] pnpm outdated failed:', err.message)
+      addDiagnostic({ source: 'pnpm outdated', message: 'Failed to detect pnpm updates', details: err.message })
       return []
     }
   },
