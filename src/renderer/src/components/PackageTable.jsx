@@ -1,15 +1,19 @@
 import { useState } from 'react'
 import ConfirmDialog from './ConfirmDialog'
 
-export default function PackageTable({ packages, loading, runtimes, onUninstall }) {
+export default function PackageTable({ packages, loading, runtimes, onUninstall, onUpgrade }) {
   const [search, setSearch] = useState('')
   const [filterManager, setFilterManager] = useState('all')
   const [pendingPkg, setPendingPkg] = useState(null)
   const [uninstalling, setUninstalling] = useState(null)
+  const [upgrading, setUpgrading] = useState(null)
 
+  const updatesCount = packages.filter((p) => p.hasUpdate).length
   const filtered = packages.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase())
-    const matchesManager = filterManager === 'all' || p.manager === filterManager
+    const matchesManager =
+      filterManager === 'all' ||
+      (filterManager === 'updates' ? p.hasUpdate : p.manager === filterManager)
     return matchesSearch && matchesManager
   })
 
@@ -25,6 +29,15 @@ export default function PackageTable({ packages, loading, runtimes, onUninstall 
     setUninstalling(null)
   }
 
+  const handleUpgradeClick = async (pkg) => {
+    const ok = window.confirm(`Update "${pkg.name}" from ${pkg.version} to ${pkg.latest}?`)
+    if (!ok) return
+    const key = `${pkg.manager}/${pkg.name}`
+    setUpgrading(key)
+    await onUpgrade(pkg.name, pkg.manager)
+    setUpgrading(null)
+  }
+
   return (
     <div className="package-table-wrapper">
       <div className="table-controls">
@@ -36,7 +49,7 @@ export default function PackageTable({ packages, loading, runtimes, onUninstall 
           onChange={(e) => setSearch(e.target.value)}
         />
         <div className="filter-tabs">
-          {['all', ...(runtimes
+          {['all', 'updates', ...(runtimes
             ? Object.entries(runtimes)
                 .filter(([, info]) => info.installed && info.hasPackages)
                 .map(([key]) => key)
@@ -48,6 +61,9 @@ export default function PackageTable({ packages, loading, runtimes, onUninstall 
               onClick={() => setFilterManager(m)}
             >
               {m}
+              {m === 'updates' && (
+                <span className="updates-pill-count">{updatesCount}</span>
+              )}
             </button>
           ))}
         </div>
@@ -73,7 +89,7 @@ export default function PackageTable({ packages, loading, runtimes, onUninstall 
           <tbody>
             {filtered.map((pkg) => {
               const key = `${pkg.manager}/${pkg.name}`
-              const isBusy = uninstalling === key
+              const isBusy = uninstalling === key || upgrading === key
               return (
                 <tr key={key} className={isBusy ? 'row-busy' : ''}>
                   <td className="col-name">{pkg.name}</td>
@@ -84,6 +100,16 @@ export default function PackageTable({ packages, loading, runtimes, onUninstall 
                     </span>
                   </td>
                   <td className="col-action">
+                    {pkg.hasUpdate && (
+                      <button
+                        className="update-badge"
+                        onClick={() => handleUpgradeClick(pkg)}
+                        disabled={isBusy}
+                        title={`Update ${pkg.name} to ${pkg.latest}`}
+                      >
+                        {upgrading === key ? 'Updating…' : `↑ ${pkg.latest}`}
+                      </button>
+                    )}
                     <button
                       className="btn-delete-row"
                       onClick={() => handleDeleteClick(pkg)}

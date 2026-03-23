@@ -3,6 +3,26 @@ import RuntimeCard from './components/RuntimeCard'
 import PackageTable from './components/PackageTable'
 import PortsTable from './components/PortsTable'
 
+function mergePackagesWithOutdated(packages, outdatedRows) {
+  const byKey = new Map(
+    (outdatedRows || []).map((row) => [
+      `${String(row.manager).toLowerCase()}/${String(row.name).toLowerCase()}`,
+      row
+    ])
+  )
+
+  return (packages || []).map((pkg) => {
+    const key = `${String(pkg.manager).toLowerCase()}/${String(pkg.name).toLowerCase()}`
+    const match = byKey.get(key)
+    return {
+      ...pkg,
+      latest: match?.latest || null,
+      current: match?.current || null,
+      hasUpdate: Boolean(match?.latest)
+    }
+  })
+}
+
 export default function App() {
   const [runtimes, setRuntimes] = useState(null)
   const [packages, setPackages] = useState([])
@@ -17,13 +37,14 @@ export default function App() {
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [rt, pkgs, pts] = await Promise.all([
+      const [rt, pkgs, outdated, pts] = await Promise.all([
         window.electronAPI.getRuntimes(),
         window.electronAPI.getPackages(),
+        window.electronAPI.getOutdated(),
         window.electronAPI.getPorts()
       ])
       setRuntimes(rt)
-      setPackages(pkgs)
+      setPackages(mergePackagesWithOutdated(pkgs, outdated))
       setPorts(pts)
     } catch (err) {
       console.error('Failed to load data:', err)
@@ -45,11 +66,27 @@ export default function App() {
     const result = await window.electronAPI.uninstallPackage(name, manager)
     if (result.success) {
       showToast(`"${name}" removed successfully.`, 'success')
-      // Refresh only packages (runtimes unchanged)
-      const pkgs = await window.electronAPI.getPackages()
-      setPackages(pkgs)
+      const [pkgs, outdated] = await Promise.all([
+        window.electronAPI.getPackages(),
+        window.electronAPI.getOutdated()
+      ])
+      setPackages(mergePackagesWithOutdated(pkgs, outdated))
     } else {
       showToast(`Failed to remove "${name}": ${result.error}`, 'error')
+    }
+  }
+
+  const handleUpgrade = async (name, manager) => {
+    const result = await window.electronAPI.upgradePackage(name, manager)
+    if (result.success) {
+      showToast(`"${name}" updated successfully.`, 'success')
+      const [pkgs, outdated] = await Promise.all([
+        window.electronAPI.getPackages(),
+        window.electronAPI.getOutdated()
+      ])
+      setPackages(mergePackagesWithOutdated(pkgs, outdated))
+    } else {
+      showToast(`Failed to update "${name}": ${result.error}`, 'error')
     }
   }
 
@@ -137,6 +174,7 @@ export default function App() {
             loading={loading}
             runtimes={runtimes}
             onUninstall={handleUninstall}
+            onUpgrade={handleUpgrade}
           />
         </section>
       )}

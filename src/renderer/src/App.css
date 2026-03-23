@@ -273,6 +273,18 @@ body {
 .filter-python.active { background: #1e2a3a; color: #4fa3d4; border-color: #1a3a5a; }
 .filter-npm.active { background: #2a1a1a; color: #e05454; border-color: #4a1a1a; }
 .filter-pnpm.active { background: #2a1e10; color: #f09220; border-color: #4a2e10; }
+.filter-updates.active { background: #2a1e10; color: #f09220; border-color: #4a2e10; }
+
+.updates-pill-count {
+  margin-left: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  border-radius: 999px;
+  padding: 1px 6px;
+  background: rgba(240, 146, 32, 0.2);
+  color: #f09220;
+  border: 1px solid #4a2e10;
+}
 
 .package-count {
   margin-left: auto;
@@ -360,6 +372,28 @@ body {
   padding: 4px 10px;
   cursor: pointer;
   transition: all 0.15s ease;
+}
+
+.col-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.update-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  background: #2a1e10;
+  color: #f09220;
+  border: 1px solid #4a2e10;
+  border-radius: 4px;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+
+.update-badge:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .btn-delete-row:hover:not(:disabled),

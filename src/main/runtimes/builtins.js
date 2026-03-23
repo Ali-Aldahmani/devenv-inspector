@@ -43,6 +43,25 @@ registerRuntime({
     }
   },
 
+  outdated: async () => {
+    try {
+      const stdout = await runInShell(
+        'python3', ['-m', 'pip', 'list', '--outdated', '--format=json'],
+        { timeout: 30000, allowNonZero: true }
+      )
+      const data = JSON.parse(stdout || '[]')
+      if (!Array.isArray(data)) return []
+      return data.map((p) => ({
+        name: p.name,
+        current: p.version,
+        latest: p.latest_version
+      }))
+    } catch (err) {
+      console.error('[builtins] pip outdated failed:', err.message)
+      return []
+    }
+  },
+
   uninstall: (pkg) => ['python3', ['-m', 'pip', 'uninstall', pkg, '-y']]
 })
 
@@ -68,6 +87,8 @@ registerRuntime({
     }
   },
 
+  outdated: null,
+
   uninstall: (pkg) => ['conda', ['remove', pkg, '-y']]
 })
 
@@ -83,6 +104,7 @@ registerRuntime({
   parseVersion: (o) => o.trim().replace(/^v/, ''),
 
   list:      null,
+  outdated:  null,
   uninstall: null
 })
 
@@ -111,6 +133,35 @@ registerRuntime({
     } catch (err) {
       console.error('[builtins] npm list failed:', err.message)
       return []
+    }
+  },
+
+  outdated: async () => {
+    try {
+      const stdout = await runInShell('npm', ['outdated', '-g', '--json'], { timeout: 30000 })
+      const data = JSON.parse(stdout || '{}')
+      return Object.entries(data).map(([name, info]) => ({
+        name,
+        current: info.current || 'unknown',
+        latest: info.latest || info.wanted || 'unknown'
+      }))
+    } catch (err) {
+      const hasStderr = Boolean((err.stderr || '').trim())
+      if (hasStderr) {
+        console.error('[builtins] npm outdated failed:', err.stderr || err.message)
+        return []
+      }
+
+      try {
+        const data = JSON.parse(err.stdout || '{}')
+        return Object.entries(data).map(([name, info]) => ({
+          name,
+          current: info.current || 'unknown',
+          latest: info.latest || info.wanted || 'unknown'
+        }))
+      } catch {
+        return []
+      }
     }
   },
 
@@ -154,6 +205,32 @@ registerRuntime({
     }
   },
 
+  outdated: async () => {
+    try {
+      const stdout = await runInShell(
+        'yarn', ['global', 'outdated', '--json'],
+        { timeout: 30000, allowNonZero: true }
+      )
+      const lines = (stdout || '').trim().split('\n').filter(Boolean)
+      for (const line of lines) {
+        try {
+          const obj = JSON.parse(line)
+          if (obj.type === 'table' && Array.isArray(obj.data?.body)) {
+            return obj.data.body.map((row) => ({
+              name: row[0],
+              current: row[1] || 'unknown',
+              latest: row[3] || row[2] || 'unknown'
+            }))
+          }
+        } catch {}
+      }
+      return []
+    } catch (err) {
+      console.error('[builtins] yarn outdated failed:', err.message)
+      return []
+    }
+  },
+
   uninstall: (pkg) => ['yarn', ['global', 'remove', pkg]]
 })
 
@@ -181,6 +258,25 @@ registerRuntime({
       }))
     } catch (err) {
       console.error('[builtins] pnpm list failed:', err.message)
+      return []
+    }
+  },
+
+  outdated: async () => {
+    try {
+      const stdout = await runInShell(
+        'pnpm', ['outdated', '-g', '--format', 'json'],
+        { timeout: 30000, allowNonZero: true }
+      )
+      const data = JSON.parse(stdout || '[]')
+      if (!Array.isArray(data)) return []
+      return data.map((p) => ({
+        name: p.packageName,
+        current: p.current || 'unknown',
+        latest: p.latest || 'unknown'
+      }))
+    } catch (err) {
+      console.error('[builtins] pnpm outdated failed:', err.message)
       return []
     }
   },

@@ -12,6 +12,7 @@
  *   detect:       async () => string|null   — raw version output or null if absent
  *   parseVersion: (out) => string           — extract clean version string from detect() output
  *   list:         async () => [{name, version}] | null  — null if no global packages
+ *   outdated:     async () => [{name, current, latest}] | null  — null if unsupported
  *   uninstall:    (pkgName) => [cmd, argsArray] | null  — null if uninstall not supported
  * }
  */
