@@ -263,19 +263,42 @@ registerRuntime({
   },
 
   outdated: async () => {
+    const parseOutdated = (output) => {
+      const clean = String(output || '')
+        .replace(/\x1B\[[0-9;]*[mGKHF]/g, '')
+        .trim()
+      const firstArray = clean.indexOf('[')
+      const firstObject = clean.indexOf('{')
+      const jsonStart =
+        firstArray !== -1 && (firstObject === -1 || firstArray < firstObject)
+          ? firstArray
+          : firstObject
+      if (jsonStart === -1) return []
+
+      const jsonStr = clean.slice(jsonStart)
+      try {
+        const data = JSON.parse(jsonStr)
+        const arr = Array.isArray(data) ? data : [data]
+        return arr.map((p) => ({
+          name: p.packageName || p.name,
+          current: p.current || 'unknown',
+          latest: p.latest || 'unknown'
+        }))
+      } catch {
+        return []
+      }
+    }
+
     try {
       const stdout = await runInShell(
         'pnpm', ['outdated', '-g', '--format', 'json'],
-        { timeout: 30000, allowNonZero: true }
+        { timeout: 30000 }
       )
-      const data = JSON.parse(stdout || '[]')
-      if (!Array.isArray(data)) return []
-      return data.map((p) => ({
-        name: p.packageName,
-        current: p.current || 'unknown',
-        latest: p.latest || 'unknown'
-      }))
+      return parseOutdated(stdout)
     } catch (err) {
+      if ((err.stdout || '').trim()) {
+        return parseOutdated(err.stdout)
+      }
       console.error('[builtins] pnpm outdated failed:', err.message)
       return []
     }
