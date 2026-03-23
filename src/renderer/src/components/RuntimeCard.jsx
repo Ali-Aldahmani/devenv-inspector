@@ -1,6 +1,8 @@
 export default function RuntimeCard({ label, info, loading }) {
+  const runtimeKey = String(label || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
+
   return (
-    <div className="runtime-card">
+    <div className={`runtime-card runtime-${runtimeKey}`}>
       <span className="runtime-label">{label}</span>
       {loading || !info ? (
         <span className="badge badge-loading">—</span>

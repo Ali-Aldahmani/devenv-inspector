@@ -44,7 +44,7 @@ export default function PackageTable({ packages, loading, runtimes, onUninstall 
           )].map((m) => (
             <button
               key={m}
-              className={`filter-tab ${filterManager === m ? 'active' : ''}`}
+              className={`filter-tab filter-${m.toLowerCase()} ${filterManager === m ? 'active' : ''}`}
               onClick={() => setFilterManager(m)}
             >
               {m}
