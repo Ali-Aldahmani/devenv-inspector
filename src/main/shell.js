@@ -3,7 +3,24 @@ import { promisify } from 'util'
 
 const execFileAsync = promisify(execFile)
 
-const SHELL = process.env.SHELL || '/bin/zsh'
+const IS_WINDOWS = process.platform === 'win32'
+const SHELL = IS_WINDOWS ? 'powershell.exe' : (process.env.SHELL || '/bin/zsh')
+
+function quotePosix(arg) {
+  return `'${String(arg).replace(/'/g, `'\\''`)}'`
+}
+
+function quotePowerShell(arg) {
+  return `'${String(arg).replace(/'/g, "''")}'`
+}
+
+function buildCommand(cmd, args) {
+  if (IS_WINDOWS) {
+    return `& ${quotePowerShell(cmd)} ${args.map(quotePowerShell).join(' ')}`
+  }
+
+  return [cmd, ...args].map(quotePosix).join(' ')
+}
 
 /**
  * Run a command through the user's login shell.
@@ -13,16 +30,20 @@ const SHELL = process.env.SHELL || '/bin/zsh'
  *  -c  run command
  */
 export async function runInShell(cmd, args, options = {}) {
-  const cmdStr = [cmd, ...args].join(' ')
+  const cmdStr = buildCommand(cmd, args)
+  const shellArgs = IS_WINDOWS
+    ? ['-NoProfile', '-Command', cmdStr]
+    : ['-i', '-l', '-c', cmdStr]
+
   try {
-    const { stdout } = await execFileAsync(
+    const { stdout, stderr } = await execFileAsync(
       SHELL,
-      ['-i', '-l', '-c', cmdStr],
+      shellArgs,
       { timeout: options.timeout || 15000 }
     )
-    return stdout
+    return stdout || stderr || ''
   } catch (err) {
-    if (options.allowNonZero && err.stdout) return err.stdout
+    if (options.allowNonZero) return err.stdout || err.stderr || ''
     throw err
   }
 }

@@ -1,4 +1,6 @@
 import './runtimes/builtins.js'
+import './runtimes/nvm.js'
+import './runtimes/pyenv.js'
 import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { registerIpcHandlers } from './ipcHandlers.js'

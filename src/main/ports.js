@@ -7,6 +7,10 @@ import { runInShell } from './shell.js'
  * Each entry: { port, protocol, pid, process }
  */
 export async function getActivePorts() {
+  if (process.platform === 'win32') {
+    return getActivePortsWindows()
+  }
+
   const ports = []
 
   // TCP: only LISTEN state (servers waiting for connections)
@@ -39,6 +43,38 @@ export async function getActivePorts() {
       return true
     })
     .sort((a, b) => a.port - b.port)
+}
+
+async function getActivePortsWindows() {
+  const script = [
+    '$ErrorActionPreference = "SilentlyContinue"',
+    '$tcp = Get-NetTCPConnection -State Listen | Select-Object LocalPort, OwningProcess',
+    '$udp = Get-NetUDPEndpoint | Select-Object LocalPort, OwningProcess',
+    '$items = @()',
+    'foreach ($t in $tcp) {',
+    '  $items += [pscustomobject]@{ port = [int]$t.LocalPort; protocol = "TCP"; pid = [int]$t.OwningProcess }',
+    '}',
+    'foreach ($u in $udp) {',
+    '  $items += [pscustomobject]@{ port = [int]$u.LocalPort; protocol = "UDP"; pid = [int]$u.OwningProcess }',
+    '}',
+    '$items = $items | Where-Object { $_.port -gt 0 -and $_.pid -gt 0 } | Sort-Object port, protocol, pid -Unique',
+    '$withName = foreach ($i in $items) {',
+    '  $procName = (Get-Process -Id $i.pid -ErrorAction SilentlyContinue).ProcessName',
+    '  if (-not $procName) { $procName = "unknown" }',
+    '  [pscustomobject]@{ port = $i.port; protocol = $i.protocol; pid = $i.pid; process = $procName }',
+    '}',
+    '$withName | ConvertTo-Json -Compress'
+  ].join('; ')
+
+  try {
+    const out = await runInShell('powershell.exe', ['-NoProfile', '-Command', script], { timeout: 15000 })
+    if (!out || !out.trim()) return []
+    const data = JSON.parse(out)
+    const arr = Array.isArray(data) ? data : [data]
+    return arr.sort((a, b) => a.port - b.port)
+  } catch {
+    return []
+  }
 }
 
 /**
