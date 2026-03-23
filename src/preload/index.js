@@ -4,7 +4,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getRuntimes: () => ipcRenderer.invoke('get-runtimes'),
   getPackages: () => ipcRenderer.invoke('get-packages'),
   getOutdated: () => ipcRenderer.invoke('get-outdated'),
-  getEnvironments: () => ipcRenderer.invoke('get-environments'),
+  getEnvironments: (extraPaths = []) => ipcRenderer.invoke('get-environments', extraPaths),
+  selectFolder: () => ipcRenderer.invoke('select-folder'),
+  getScanFolders: () => ipcRenderer.invoke('get-scan-folders'),
+  setScanFolders: (folders) => ipcRenderer.invoke('set-scan-folders', folders),
   uninstallPackage: (name, manager) =>
     ipcRenderer.invoke('uninstall-package', { name, manager }),
   upgradePackage: (name, manager) =>

@@ -37,7 +37,14 @@ function typeClass(type) {
   return ''
 }
 
-export default function EnvironmentsTable({ environments, loading, onOpen }) {
+export default function EnvironmentsTable({
+  environments,
+  loading,
+  onOpen,
+  scanFolders,
+  onAddFolder,
+  onRemoveFolder
+}) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
 
@@ -76,7 +83,26 @@ export default function EnvironmentsTable({ environments, loading, onOpen }) {
         <span className="package-count">
           {filtered.length} environment{filtered.length !== 1 ? 's' : ''}
         </span>
+        <button className="btn-add-folder" onClick={onAddFolder}>
+          + Add Folder
+        </button>
       </div>
+      {Array.isArray(scanFolders) && scanFolders.length > 0 && (
+        <div className="scan-folder-tags">
+          {scanFolders.map((folder) => (
+            <span className="scan-folder-tag" key={folder} title={folder}>
+              <span className="scan-folder-path">{folder}</span>
+              <button
+                className="scan-folder-remove"
+                onClick={() => onRemoveFolder(folder)}
+                title={`Remove ${folder}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div className="table-placeholder">Scanning environments...</div>

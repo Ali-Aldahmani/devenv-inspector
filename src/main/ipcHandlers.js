@@ -1,14 +1,36 @@
-import { ipcMain, shell } from 'electron'
+import { app, dialog, ipcMain, shell } from 'electron'
 import { detectRuntimes } from './detectors.js'
 import { getAllPackages } from './parsers.js'
 import { runInShell } from './shell.js'
 import { getRegisteredRuntimes, getRuntime } from './registry.js'
 import { getActivePorts, killProcess } from './ports.js'
 import { detectEnvs } from './envDetector.js'
+import path from 'path'
+import { readFile, writeFile } from 'fs/promises'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
 
 let cachedRuntimes = null
+const SCAN_FOLDERS_FILE = path.join(app.getPath('userData'), 'scan-folders.json')
+
+async function readScanFolders() {
+  try {
+    const raw = await readFile(SCAN_FOLDERS_FILE, 'utf8')
+    const data = JSON.parse(raw)
+    if (!Array.isArray(data)) return []
+    return Array.from(new Set(data.filter((p) => typeof p === 'string' && p.trim())))
+  } catch {
+    return []
+  }
+}
+
+async function writeScanFolders(paths) {
+  const clean = Array.from(
+    new Set((Array.isArray(paths) ? paths : []).filter((p) => typeof p === 'string' && p.trim()))
+  )
+  await writeFile(SCAN_FOLDERS_FILE, JSON.stringify(clean, null, 2), 'utf8')
+  return clean
+}
 
 export function registerIpcHandlers() {
   ipcMain.handle('get-runtimes', async () => {
@@ -107,9 +129,33 @@ export function registerIpcHandlers() {
     return getActivePorts()
   })
 
-  ipcMain.handle('get-environments', async () => {
+  ipcMain.handle('get-environments', async (_event, extraPaths = []) => {
     try {
-      return await detectEnvs()
+      return await detectEnvs(extraPaths)
+    } catch {
+      return []
+    }
+  })
+
+  ipcMain.handle('select-folder', async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ['openDirectory']
+      })
+      if (result.canceled || !result.filePaths?.length) return null
+      return result.filePaths[0]
+    } catch {
+      return null
+    }
+  })
+
+  ipcMain.handle('get-scan-folders', async () => {
+    return readScanFolders()
+  })
+
+  ipcMain.handle('set-scan-folders', async (_event, folders = []) => {
+    try {
+      return await writeScanFolders(folders)
     } catch {
       return []
     }

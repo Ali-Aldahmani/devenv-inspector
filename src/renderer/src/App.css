@@ -113,6 +113,23 @@ body {
   cursor: default;
 }
 
+.btn-add-folder {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-add-folder:hover {
+  color: var(--text-version);
+  border-color: var(--border-main);
+}
+
 .btn-theme-toggle {
   -webkit-app-region: no-drag;
   font-family: var(--mono);
@@ -254,6 +271,7 @@ body {
 .filter-tabs {
   display: flex;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .filter-tab {
@@ -291,6 +309,49 @@ body {
   font-family: var(--mono);
   font-size: 11px;
   color: var(--text-muted);
+}
+
+.scan-folder-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -2px 0 12px;
+}
+
+.scan-folder-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 380px;
+  background: #1a1c21;
+  border: 1px solid #252830;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #888;
+  border-radius: 5px;
+  padding: 3px 10px;
+}
+
+.scan-folder-path {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+}
+
+.scan-folder-remove {
+  border: none;
+  background: transparent;
+  color: #444;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.scan-folder-remove:hover {
+  color: #e05454;
 }
 
 .package-table {

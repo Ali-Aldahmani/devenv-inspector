@@ -29,6 +29,7 @@ export default function App() {
   const [packages, setPackages] = useState([])
   const [ports, setPorts] = useState([])
   const [environments, setEnvironments] = useState([])
+  const [scanFolders, setScanFolders] = useState([])
   const [envLoading, setEnvLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
@@ -37,15 +38,27 @@ export default function App() {
     () => (document.documentElement.classList.contains('light-mode') ? 'light' : 'dark')
   )
 
-  const loadEnvironments = useCallback(async () => {
+  const loadEnvironments = useCallback(async (customFolders = scanFolders) => {
     setEnvLoading(true)
     try {
-      const envs = await window.electronAPI.getEnvironments()
+      const envs = await window.electronAPI.getEnvironments(customFolders)
       setEnvironments(Array.isArray(envs) ? envs : [])
     } catch {
       setEnvironments([])
     } finally {
       setEnvLoading(false)
+    }
+  }, [scanFolders])
+
+  const loadScanFolders = useCallback(async () => {
+    try {
+      const folders = await window.electronAPI.getScanFolders()
+      const clean = Array.isArray(folders) ? folders : []
+      setScanFolders(clean)
+      return clean
+    } catch {
+      setScanFolders([])
+      return []
     }
   }, [])
 
@@ -62,14 +75,14 @@ export default function App() {
       setPackages(mergePackagesWithOutdated(pkgs, outdated))
       setPorts(pts)
       if (includeEnvironments) {
-        await loadEnvironments()
+        await loadEnvironments(scanFolders)
       }
     } catch (err) {
       console.error('Failed to load data:', err)
     } finally {
       setLoading(false)
     }
-  }, [loadEnvironments])
+  }, [loadEnvironments, scanFolders])
 
   useEffect(() => {
     loadData()
@@ -136,7 +149,29 @@ export default function App() {
 
   const handleOpenEnvironmentsTab = () => {
     setActiveTab('environments')
-    loadEnvironments()
+    ;(async () => {
+      const folders = await loadScanFolders()
+      await loadEnvironments(folders)
+    })()
+  }
+
+  const handleAddScanFolder = async () => {
+    const selected = await window.electronAPI.selectFolder()
+    if (!selected) return
+
+    const updated = Array.from(new Set([...scanFolders, selected]))
+    const saved = await window.electronAPI.setScanFolders(updated)
+    const next = Array.isArray(saved) ? saved : updated
+    setScanFolders(next)
+    await loadEnvironments(next)
+  }
+
+  const handleRemoveScanFolder = async (targetPath) => {
+    const updated = scanFolders.filter((p) => p !== targetPath)
+    const saved = await window.electronAPI.setScanFolders(updated)
+    const next = Array.isArray(saved) ? saved : updated
+    setScanFolders(next)
+    await loadEnvironments(next)
   }
 
   return (
@@ -230,6 +265,9 @@ export default function App() {
             environments={environments}
             loading={envLoading}
             onOpen={handleOpenPath}
+            scanFolders={scanFolders}
+            onAddFolder={handleAddScanFolder}
+            onRemoveFolder={handleRemoveScanFolder}
           />
         </section>
       )}

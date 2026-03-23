@@ -84,21 +84,42 @@ async function detectType(projectPath) {
   return null
 }
 
-export async function detectEnvs() {
+function getDefaultRoots() {
+  const home = os.homedir()
+  const roots = [
+    'Desktop',
+    'Documents',
+    'Downloads',
+    'Projects',
+    'Developer',
+    'dev',
+    'code'
+  ].map((p) => path.join(home, p))
+
+  if (process.platform === 'win32') {
+    roots.push(
+      path.join(home, 'Documents'),
+      path.join(home, 'Desktop'),
+      path.join(home, 'Projects'),
+      'D:\\Projects',
+      'D:\\dev'
+    )
+  }
+
+  return roots
+}
+
+export async function detectEnvs(paths = []) {
   try {
-    const home = os.homedir()
-    const roots = [
-      'Desktop',
-      'Documents',
-      'Downloads',
-      'Projects',
-      'Developer',
-      'dev',
-      'code'
-    ].map((p) => path.join(home, p))
+    const mergedRoots = Array.from(
+      new Set([
+        ...getDefaultRoots(),
+        ...((Array.isArray(paths) ? paths : []).filter((p) => typeof p === 'string' && p.trim()))
+      ])
+    )
 
     const candidates = new Set()
-    for (const root of roots) {
+    for (const root of mergedRoots) {
       if (!(await existsDir(root))) continue
       const levelOne = await listDirectories(root)
       for (const dir of levelOne) {
