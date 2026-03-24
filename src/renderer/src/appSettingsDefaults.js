@@ -9,5 +9,8 @@ export const APP_SETTINGS_DEFAULTS = {
   confirmBeforeUpgrade: true,
   confirmBeforeKillPort: true,
   scanDepth: 2,
-  excludedFolders: []
+  excludedFolders: [],
+  checkUpdatesOnLaunch: true,
+  autoDownloadUpdates: false,
+  updateChannel: 'stable'
 }

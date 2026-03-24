@@ -44,7 +44,18 @@ const api = {
   killPort: (pid) => ipcRenderer.invoke('kill-port', pid),
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (s) => ipcRenderer.invoke('save-settings', s),
-  resetSettings: () => ipcRenderer.invoke('reset-settings')
+  resetSettings: () => ipcRenderer.invoke('reset-settings'),
+  checkForUpdates: (opts) => ipcRenderer.invoke('check-for-updates', opts ?? {}),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  setAutoDownload: (v) => ipcRenderer.invoke('set-auto-download', v),
+  setUpdateChannel: (v) => ipcRenderer.invoke('set-update-channel', v),
+  openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url),
+  onUpdateStatus: (cb) => {
+    const listener = (_event, data) => cb(data)
+    ipcRenderer.on('update-status', listener)
+    return () => ipcRenderer.removeListener('update-status', listener)
+  }
 }
 
 contextBridge.exposeInMainWorld('electronAPI', api)

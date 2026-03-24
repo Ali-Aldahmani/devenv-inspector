@@ -20,6 +20,14 @@ import {
 } from './pluginManager.js'
 import { pluginCatalog } from './pluginCatalog.js'
 import { getSettings, saveSettings, resetSettings } from './settingsStore.js'
+import {
+  applyUpdaterSettingsFromStore,
+  checkForUpdates,
+  downloadUpdate,
+  installUpdate,
+  setAutoDownload,
+  setUpdateChannel
+} from './updater.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
 
@@ -299,6 +307,45 @@ export function registerIpcHandlers() {
   })
 
   ipcMain.handle('get-settings', async () => getSettings())
-  ipcMain.handle('save-settings', async (_event, partial) => saveSettings(partial ?? {}))
-  ipcMain.handle('reset-settings', async () => resetSettings())
+  ipcMain.handle('save-settings', async (_event, partial) => {
+    const next = await saveSettings(partial ?? {})
+    applyUpdaterSettingsFromStore()
+    return next
+  })
+  ipcMain.handle('reset-settings', async () => {
+    const next = await resetSettings()
+    applyUpdaterSettingsFromStore()
+    return next
+  })
+
+  ipcMain.handle('check-for-updates', async (_event, opts) => {
+    await checkForUpdates(Boolean(opts?.manual))
+    return { success: true }
+  })
+  ipcMain.handle('download-update', async () => {
+    await downloadUpdate()
+    return { success: true }
+  })
+  ipcMain.handle('install-update', async () => {
+    installUpdate()
+    return { success: true }
+  })
+  ipcMain.handle('set-auto-download', async (_event, value) => {
+    setAutoDownload(Boolean(value))
+    return { success: true }
+  })
+  ipcMain.handle('set-update-channel', async (_event, channel) => {
+    const ch = channel === 'beta' ? 'beta' : 'stable'
+    setUpdateChannel(ch)
+    return { success: true }
+  })
+  ipcMain.handle('open-external-url', async (_event, url) => {
+    if (typeof url !== 'string' || !url.trim()) return { success: false }
+    try {
+      await shell.openExternal(url.trim())
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: err?.message || 'Failed to open URL' }
+    }
+  })
 }

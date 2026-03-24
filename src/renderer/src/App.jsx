@@ -90,6 +90,7 @@ function AppContent() {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [exportToast, setExportToast] = useState(null)
+  const [updateBanner, setUpdateBanner] = useState(null)
   const [activeTab, setActiveTab] = useState('packages')
   const [themePreference, setThemePreference] = useState(() => {
     const raw = localStorage.getItem('devenv-theme') ?? 'system'
@@ -116,6 +117,33 @@ function AppContent() {
   useEffect(() => {
     scanFoldersRef.current = scanFolders
   }, [scanFolders])
+
+  useEffect(() => {
+    const unsub = window.api.onUpdateStatus((data) => {
+      if (data.status === 'checking') {
+        setUpdateBanner(null)
+        return
+      }
+      if (data.status === 'up-to-date' && data.manual) {
+        setExportToast({ message: "✓ You're on the latest version", type: 'success' })
+        setTimeout(() => setExportToast(null), 3000)
+        setUpdateBanner(null)
+        return
+      }
+      if (data.status === 'up-to-date') {
+        setUpdateBanner(null)
+        return
+      }
+      setUpdateBanner(data)
+    })
+    return unsub
+  }, [])
+
+  useEffect(() => {
+    if (updateBanner?.status !== 'error') return
+    const t = setTimeout(() => setUpdateBanner(null), 8000)
+    return () => clearTimeout(t)
+  }, [updateBanner?.status])
 
   const loadEnvironments = useCallback(async (customFolders = scanFolders) => {
     setEnvLoading(true)
@@ -468,6 +496,8 @@ function AppContent() {
     await loadEnvironments(next)
   }
 
+  const releasesUrl = 'https://github.com/Ali-Aldahmani/devenv-inspector/releases'
+
   return (
     <div className="app">
       <header className="app-header">
@@ -501,6 +531,98 @@ function AppContent() {
           {loading ? 'Loading…' : 'Refresh'}
         </button>
       </header>
+
+      {updateBanner?.status === 'available' && (
+        <div className="update-banner update-banner-available">
+          <div className="update-banner-inner">
+            <span className="update-banner-title">
+              ✦ DevEnv Inspector v{updateBanner.version} is available
+            </span>
+            <div className="update-banner-actions">
+              <button
+                type="button"
+                className="update-banner-btn-primary"
+                onClick={() => window.api.downloadUpdate()}
+              >
+                Download
+              </button>
+              <button
+                type="button"
+                className="update-banner-link"
+                onClick={() => window.api.openExternalUrl(releasesUrl)}
+              >
+                View release notes
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="update-banner-dismiss"
+            onClick={() => setUpdateBanner(null)}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {updateBanner?.status === 'downloading' && (
+        <div className="update-banner update-banner-downloading">
+          <div className="update-banner-inner update-banner-inner-full">
+            <div className="update-banner-downloading-text">
+              Downloading update... {updateBanner.percent ?? 0}%
+            </div>
+            <div className="update-banner-progress-track">
+              <div
+                className="update-banner-progress-fill"
+                style={{ width: `${Math.min(100, Math.max(0, updateBanner.percent ?? 0))}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {updateBanner?.status === 'downloaded' && (
+        <div className="update-banner update-banner-downloaded">
+          <div className="update-banner-inner">
+            <span className="update-banner-title-downloaded">
+              ✦ Update ready — v{updateBanner.version} downloaded
+            </span>
+            <div className="update-banner-actions">
+              <button
+                type="button"
+                className="update-banner-btn-install"
+                onClick={() => window.api.installUpdate()}
+              >
+                Restart & Install
+              </button>
+              <button
+                type="button"
+                className="update-banner-btn-later"
+                onClick={() => setUpdateBanner(null)}
+              >
+                Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {updateBanner?.status === 'error' && (
+        <div className="update-banner update-banner-error">
+          <span className="update-banner-error-text">
+            Update check failed: {updateBanner.message || 'Unknown error'}
+          </span>
+          <button
+            type="button"
+            className="update-banner-dismiss"
+            onClick={() => setUpdateBanner(null)}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       <section className="runtimes-row">
         {runtimes

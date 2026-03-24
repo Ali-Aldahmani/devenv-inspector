@@ -15,7 +15,10 @@ const DEFAULTS = {
   confirmBeforeUpgrade: true,
   confirmBeforeKillPort: true,
   scanDepth: 2,
-  excludedFolders: []
+  excludedFolders: [],
+  checkUpdatesOnLaunch: true,
+  autoDownloadUpdates: false,
+  updateChannel: 'stable'
 }
 
 function mergeWithDefaults(raw) {
@@ -48,7 +51,18 @@ function mergeWithDefaults(raw) {
             raw.excludedFolders.filter((p) => typeof p === 'string' && p.trim()).map((p) => p.trim())
           )
         )
-      : DEFAULTS.excludedFolders
+      : DEFAULTS.excludedFolders,
+    checkUpdatesOnLaunch:
+      typeof raw?.checkUpdatesOnLaunch === 'boolean'
+        ? raw.checkUpdatesOnLaunch
+        : DEFAULTS.checkUpdatesOnLaunch,
+    autoDownloadUpdates:
+      typeof raw?.autoDownloadUpdates === 'boolean'
+        ? raw.autoDownloadUpdates
+        : DEFAULTS.autoDownloadUpdates,
+    updateChannel: ['stable', 'beta'].includes(raw?.updateChannel)
+      ? raw.updateChannel
+      : DEFAULTS.updateChannel
   }
 }
 

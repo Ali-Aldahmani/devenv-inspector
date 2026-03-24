@@ -24,6 +24,8 @@ export default function SettingsModal({
   const scrollDoneRef = useRef(false)
   const [resetConfirm, setResetConfirm] = useState(false)
   const [alwaysExcludedOpen, setAlwaysExcludedOpen] = useState(false)
+  const [manualCheckBusy, setManualCheckBusy] = useState(false)
+  const manualCheckActiveRef = useRef(false)
 
   const loadSettings = useCallback(async () => {
     try {
@@ -58,6 +60,28 @@ export default function SettingsModal({
       onScrollToSectionConsumed?.()
     })
   }, [open, scrollToSection, onScrollToSectionConsumed])
+
+  useEffect(() => {
+    const unsub = window.api.onUpdateStatus((data) => {
+      if (!manualCheckActiveRef.current) return
+      if (data.status === 'checking') {
+        setManualCheckBusy(true)
+      } else {
+        setManualCheckBusy(false)
+        manualCheckActiveRef.current = false
+      }
+    })
+    return unsub
+  }, [])
+
+  useEffect(() => {
+    if (!manualCheckBusy) return
+    const t = setTimeout(() => {
+      setManualCheckBusy(false)
+      manualCheckActiveRef.current = false
+    }, 45000)
+    return () => clearTimeout(t)
+  }, [manualCheckBusy])
 
   const persist = async (partial) => {
     try {
@@ -399,6 +423,97 @@ export default function SettingsModal({
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="settings-section" id="settings-section-updates">
+          <h3 className="settings-section-heading">UPDATES</h3>
+          <div className="settings-section-body">
+            <div className="setting-row">
+              <div className="setting-row-text">
+                <div className="setting-label">Check for updates on launch</div>
+                <div className="setting-desc">
+                  Automatically check for new versions when the app starts
+                </div>
+              </div>
+              <div className="setting-row-control">
+                <button
+                  type="button"
+                  className={`toggle-switch ${settings.checkUpdatesOnLaunch ? 'on' : ''}`}
+                  onClick={() => persist({ checkUpdatesOnLaunch: !settings.checkUpdatesOnLaunch })}
+                  aria-pressed={settings.checkUpdatesOnLaunch}
+                  aria-label="Check for updates on launch"
+                >
+                  <span className="toggle-knob" />
+                </button>
+              </div>
+            </div>
+
+            <div className="setting-row">
+              <div className="setting-row-text">
+                <div className="setting-label">Auto-download updates</div>
+                <div className="setting-desc">
+                  Download updates automatically in the background
+                </div>
+              </div>
+              <div className="setting-row-control">
+                <button
+                  type="button"
+                  className={`toggle-switch ${settings.autoDownloadUpdates ? 'on' : ''}`}
+                  onClick={async () => {
+                    const next = !settings.autoDownloadUpdates
+                    await persist({ autoDownloadUpdates: next })
+                    await window.api.setAutoDownload(next)
+                  }}
+                  aria-pressed={settings.autoDownloadUpdates}
+                  aria-label="Auto-download updates"
+                >
+                  <span className="toggle-knob" />
+                </button>
+              </div>
+            </div>
+
+            <div className="setting-row setting-row-last">
+              <div className="setting-row-text">
+                <div className="setting-label">Update channel</div>
+                <div className="setting-desc">
+                  Stable receives tested releases. Beta gets new features earlier.
+                </div>
+              </div>
+              <div className="setting-row-control">
+                <div className="segmented" role="group" aria-label="Update channel">
+                  {[
+                    { id: 'stable', label: 'Stable' },
+                    { id: 'beta', label: 'Beta' }
+                  ].map(({ id, label }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      className={`segmented-btn ${(settings.updateChannel ?? 'stable') === id ? 'active' : ''}`}
+                      onClick={async () => {
+                        await persist({ updateChannel: id })
+                        await window.api.setUpdateChannel(id)
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="settings-check-updates-btn"
+              disabled={manualCheckBusy}
+              onClick={() => {
+                manualCheckActiveRef.current = true
+                setManualCheckBusy(true)
+                window.api.checkForUpdates({ manual: true })
+              }}
+            >
+              {manualCheckBusy ? 'Checking…' : 'Check for updates now'}
+            </button>
           </div>
         </section>
 
