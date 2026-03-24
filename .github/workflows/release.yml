@@ -8,8 +8,6 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,17 +15,15 @@ jobs:
           node-version: 20
       - run: npm install
       - run: npm run package
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: |
-            dist/**/*.exe
-            out/**/*.exe
+          path: dist/**/*.exe
 
   build-mac:
     runs-on: macos-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,9 +31,9 @@ jobs:
           node-version: 20
       - run: npm install
       - run: npm run package
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: mac
-          path: |
-            dist/**/*.dmg
-            out/**/*.dmg
+          path: dist/**/*.dmg
