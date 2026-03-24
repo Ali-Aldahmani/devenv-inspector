@@ -8,28 +8,36 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
       - run: npm install
       - run: npm run package
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: dist/*.exe
+          path: |
+            dist/**/*.exe
+            out/**/*.exe
 
   build-mac:
     runs-on: macos-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
       - run: npm install
       - run: npm run package
       - uses: actions/upload-artifact@v4
         with:
           name: mac
-          path: dist/*.dmg
+          path: |
+            dist/**/*.dmg
+            out/**/*.dmg
