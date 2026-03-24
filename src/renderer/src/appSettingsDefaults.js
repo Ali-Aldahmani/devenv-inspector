@@ -7,5 +7,7 @@ export const APP_SETTINGS_DEFAULTS = {
   showSystemPackages: false,
   confirmBeforeUninstall: true,
   confirmBeforeUpgrade: true,
-  confirmBeforeKillPort: true
+  confirmBeforeKillPort: true,
+  scanDepth: 2,
+  excludedFolders: []
 }

@@ -13,7 +13,9 @@ const DEFAULTS = {
   showSystemPackages: false,
   confirmBeforeUninstall: true,
   confirmBeforeUpgrade: true,
-  confirmBeforeKillPort: true
+  confirmBeforeKillPort: true,
+  scanDepth: 2,
+  excludedFolders: []
 }
 
 function mergeWithDefaults(raw) {
@@ -38,7 +40,15 @@ function mergeWithDefaults(raw) {
     confirmBeforeKillPort:
       typeof raw?.confirmBeforeKillPort === 'boolean'
         ? raw.confirmBeforeKillPort
-        : DEFAULTS.confirmBeforeKillPort
+        : DEFAULTS.confirmBeforeKillPort,
+    scanDepth: [1, 2, 3].includes(raw?.scanDepth) ? raw.scanDepth : DEFAULTS.scanDepth,
+    excludedFolders: Array.isArray(raw?.excludedFolders)
+      ? Array.from(
+          new Set(
+            raw.excludedFolders.filter((p) => typeof p === 'string' && p.trim()).map((p) => p.trim())
+          )
+        )
+      : DEFAULTS.excludedFolders
   }
 }
 

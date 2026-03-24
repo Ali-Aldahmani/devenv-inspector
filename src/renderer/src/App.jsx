@@ -101,10 +101,21 @@ function AppContent() {
   const activeTabRef = useRef(activeTab)
   const loadDataRef = useRef(null)
   const autoRefreshTimerRef = useRef(null)
+  const appSettingsRef = useRef(appSettings)
+  const scanFoldersRef = useRef(scanFolders)
+  const envRescanPendingRef = useRef(false)
 
   useEffect(() => {
     activeTabRef.current = activeTab
   }, [activeTab])
+
+  useEffect(() => {
+    appSettingsRef.current = appSettings
+  }, [appSettings])
+
+  useEffect(() => {
+    scanFoldersRef.current = scanFolders
+  }, [scanFolders])
 
   const loadEnvironments = useCallback(async (customFolders = scanFolders) => {
     setEnvLoading(true)
@@ -331,12 +342,27 @@ function AppContent() {
   }
 
   const handleSettingsUpdated = (s) => {
+    const prev = appSettingsRef.current
+    const sortedFolders = (a) => JSON.stringify([...(a ?? [])].sort())
+    const hadEnvChange =
+      s.scanDepth !== prev.scanDepth || sortedFolders(s.excludedFolders) !== sortedFolders(prev.excludedFolders)
+
     setAppSettings({ ...APP_SETTINGS_DEFAULTS, ...s })
     setThemePreference(s.theme)
     applyThemePreference(s.theme)
     clearAutoRefresh()
     if (s.autoRefresh) {
       startAutoRefresh(s.autoRefreshInterval ?? 60)
+    }
+
+    if (hadEnvChange) {
+      showToast('Settings saved — environments will re-scan', 'success')
+      if (activeTabRef.current === 'environments') {
+        envRescanPendingRef.current = false
+        loadEnvironments(scanFoldersRef.current)
+      } else {
+        envRescanPendingRef.current = true
+      }
     }
   }
 
@@ -356,6 +382,7 @@ function AppContent() {
     ;(async () => {
       const folders = await loadScanFolders()
       await loadEnvironments(folders)
+      envRescanPendingRef.current = false
     })()
   }
 

@@ -373,6 +373,84 @@ body {
   border-bottom: none;
 }
 
+.setting-row-scan-depth-wrap {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.setting-row-scan-depth-wrap .settings-scan-depth-warning {
+  flex: 1 0 100%;
+  order: 3;
+  padding-top: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #f09220;
+  line-height: 1.4;
+}
+
+.setting-row-env-excluded {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.setting-env-excluded-inner {
+  width: 100%;
+}
+
+.settings-excluded-empty {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #555;
+  margin: 8px 0 0;
+}
+
+.settings-excluded-tags {
+  margin: 8px 0 0;
+}
+
+.settings-excluded-add {
+  margin-top: 10px;
+  align-self: flex-start;
+}
+
+.settings-always-excluded {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #141619;
+}
+
+.settings-always-excluded-toggle {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #555;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.settings-always-excluded-toggle:hover {
+  color: #888;
+}
+
+.settings-always-excluded-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.settings-exclude-pill {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #444;
+  background: #16181d;
+  border: 1px solid #252830;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
 .settings-footer {
   margin-top: 8px;
   padding-top: 12px;

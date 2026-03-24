@@ -146,7 +146,12 @@ export function registerIpcHandlers() {
 
   ipcMain.handle('get-environments', async (_event, extraPaths = []) => {
     try {
-      return await detectEnvs(extraPaths)
+      const settings = await getSettings()
+      return await detectEnvs(
+        extraPaths,
+        settings.scanDepth ?? 2,
+        settings.excludedFolders ?? []
+      )
     } catch {
       addDiagnostic({ source: 'get-environments', message: 'Failed to load environments', details: '' })
       return []

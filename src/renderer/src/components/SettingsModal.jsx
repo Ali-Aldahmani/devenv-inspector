@@ -1,6 +1,18 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { APP_SETTINGS_DEFAULTS } from '../appSettingsDefaults'
 
+const ALWAYS_EXCLUDED_PILLS = [
+  'node_modules',
+  '.git',
+  '__pycache__',
+  '.cache',
+  'dist',
+  'build',
+  '.next',
+  'out',
+  'coverage'
+]
+
 export default function SettingsModal({
   open,
   onClose,
@@ -11,6 +23,7 @@ export default function SettingsModal({
   const [settings, setSettings] = useState(APP_SETTINGS_DEFAULTS)
   const scrollDoneRef = useRef(false)
   const [resetConfirm, setResetConfirm] = useState(false)
+  const [alwaysExcludedOpen, setAlwaysExcludedOpen] = useState(false)
 
   const loadSettings = useCallback(async () => {
     try {
@@ -35,7 +48,9 @@ export default function SettingsModal({
         ? 'settings-section-packages'
         : scrollToSection === 'ports'
           ? 'settings-section-ports'
-          : null
+          : scrollToSection === 'environments'
+            ? 'settings-section-environments'
+            : null
     if (!id) return
     requestAnimationFrame(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
@@ -57,6 +72,19 @@ export default function SettingsModal({
 
   const handleTheme = async (value) => {
     await persist({ theme: value })
+  }
+
+  const addExcludedFolder = async () => {
+    const picked = await window.electronAPI.selectFolder()
+    if (!picked) return
+    const next = [...new Set([...(settings.excludedFolders || []), picked])]
+    await persist({ excludedFolders: next })
+  }
+
+  const removeExcludedFolder = (folder) => {
+    persist({
+      excludedFolders: (settings.excludedFolders || []).filter((f) => f !== folder)
+    })
   }
 
   const handleReset = async () => {
@@ -281,6 +309,94 @@ export default function SettingsModal({
                 >
                   <span className="toggle-knob" />
                 </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="settings-section" id="settings-section-environments">
+          <h3 className="settings-section-heading">ENVIRONMENTS</h3>
+          <div className="settings-section-body">
+            <div className="setting-row setting-row-scan-depth-wrap">
+              <div className="setting-row-text">
+                <div className="setting-label">Scan depth</div>
+                <div className="setting-desc">
+                  How many folder levels deep to search for environments
+                </div>
+              </div>
+              <div className="setting-row-control">
+                <div className="segmented" role="group" aria-label="Scan depth">
+                  {[
+                    { d: 1, label: '1 level' },
+                    { d: 2, label: '2 levels' },
+                    { d: 3, label: '3 levels' }
+                  ].map(({ d, label }) => (
+                    <button
+                      key={d}
+                      type="button"
+                      className={`segmented-btn ${(settings.scanDepth ?? 2) === d ? 'active' : ''}`}
+                      onClick={() => persist({ scanDepth: d })}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {(settings.scanDepth ?? 2) === 3 && (
+                <div className="settings-scan-depth-warning">
+                  ⚠ Deeper scans may be slower on large directories
+                </div>
+              )}
+            </div>
+
+            <div className="setting-row setting-row-last setting-row-env-excluded">
+              <div className="setting-env-excluded-inner">
+                <div className="setting-label">Excluded folders</div>
+                <div className="setting-desc">
+                  Folders to skip when scanning for environments
+                </div>
+                {(settings.excludedFolders || []).length === 0 ? (
+                  <p className="settings-excluded-empty">No folders excluded</p>
+                ) : (
+                  <div className="scan-folder-tags settings-excluded-tags">
+                    {(settings.excludedFolders || []).map((folder) => (
+                      <span className="scan-folder-tag" key={folder} title={folder}>
+                        <span className="scan-folder-path">{folder}</span>
+                        <button
+                          type="button"
+                          className="scan-folder-remove"
+                          onClick={() => removeExcludedFolder(folder)}
+                          title={`Remove ${folder}`}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <button type="button" className="btn-add-folder settings-excluded-add" onClick={addExcludedFolder}>
+                  ＋ Add folder
+                </button>
+
+                <div className="settings-always-excluded">
+                  <button
+                    type="button"
+                    className="settings-always-excluded-toggle"
+                    onClick={() => setAlwaysExcludedOpen((v) => !v)}
+                    aria-expanded={alwaysExcludedOpen}
+                  >
+                    {alwaysExcludedOpen ? '▾ Always excluded' : '▸ Always excluded by default'}
+                  </button>
+                  {alwaysExcludedOpen && (
+                    <div className="settings-always-excluded-pills">
+                      {ALWAYS_EXCLUDED_PILLS.map((name) => (
+                        <span className="settings-exclude-pill" key={name}>
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
