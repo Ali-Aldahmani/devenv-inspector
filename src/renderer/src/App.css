@@ -581,11 +581,36 @@ body {
   border: 1px solid #4a2e10;
 }
 
-.package-count {
+.package-count-group {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-controls > .package-count {
+  margin-left: auto;
+}
+
+.package-count {
   font-family: var(--mono);
   font-size: 11px;
   color: var(--text-muted);
+}
+
+.system-hidden-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #444;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.system-hidden-badge:hover {
+  color: var(--text-secondary);
 }
 
 .scan-folder-tags {

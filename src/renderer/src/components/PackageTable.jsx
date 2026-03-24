@@ -8,7 +8,11 @@ export default function PackageTable({
   onUninstall,
   onUpgrade,
   onExportToast,
-  onFilteredChange
+  onFilteredChange,
+  showSystemPackages,
+  onOpenPackagesSettings,
+  confirmBeforeUninstall,
+  confirmBeforeUpgrade
 }) {
   const [search, setSearch] = useState('')
   const [filterManager, setFilterManager] = useState('all')
@@ -43,21 +47,31 @@ export default function PackageTable({
     onFilteredChange?.(filtered)
   }, [filtered, onFilteredChange])
 
+  const runUninstall = async (pkg) => {
+    setUninstalling(`${pkg.manager}/${pkg.name}`)
+    await onUninstall(pkg.name, pkg.manager)
+    setUninstalling(null)
+  }
+
   const handleDeleteClick = (pkg) => {
+    if (!confirmBeforeUninstall) {
+      void runUninstall(pkg)
+      return
+    }
     setPendingPkg(pkg)
   }
 
   const handleConfirm = async () => {
     const pkg = pendingPkg
     setPendingPkg(null)
-    setUninstalling(`${pkg.manager}/${pkg.name}`)
-    await onUninstall(pkg.name, pkg.manager)
-    setUninstalling(null)
+    await runUninstall(pkg)
   }
 
   const handleUpgradeClick = async (pkg) => {
-    const ok = window.confirm(`Update "${pkg.name}" from ${pkg.version} to ${pkg.latest}?`)
-    if (!ok) return
+    if (confirmBeforeUpgrade) {
+      const ok = window.confirm(`Update "${pkg.name}" from ${pkg.version} to ${pkg.latest}?`)
+      if (!ok) return
+    }
     const key = `${pkg.manager}/${pkg.name}`
     setUpgrading(key)
     await onUpgrade(pkg.name, pkg.manager)
@@ -104,9 +118,21 @@ export default function PackageTable({
             </button>
           ))}
         </div>
-        <span className="package-count">
-          {filtered.length} package{filtered.length !== 1 ? 's' : ''}
-        </span>
+        <div className="package-count-group">
+          <span className="package-count">
+            {filtered.length} package{filtered.length !== 1 ? 's' : ''}
+          </span>
+          {!showSystemPackages && (
+            <button
+              type="button"
+              className="system-hidden-badge"
+              onClick={onOpenPackagesSettings}
+              title="Open Settings — Packages"
+            >
+              system hidden
+            </button>
+          )}
+        </div>
         <div className="export-dropdown" ref={exportRef}>
           <button className="btn-add-folder" onClick={() => setShowExportMenu((v) => !v)}>
             ↓ Export

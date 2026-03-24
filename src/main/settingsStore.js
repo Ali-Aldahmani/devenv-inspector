@@ -9,7 +9,11 @@ const DEFAULTS = {
   theme: 'system',
   autoRefresh: false,
   autoRefreshInterval: 60,
-  refreshOnStartup: true
+  refreshOnStartup: true,
+  showSystemPackages: false,
+  confirmBeforeUninstall: true,
+  confirmBeforeUpgrade: true,
+  confirmBeforeKillPort: true
 }
 
 function mergeWithDefaults(raw) {
@@ -20,7 +24,21 @@ function mergeWithDefaults(raw) {
       ? raw.autoRefreshInterval
       : DEFAULTS.autoRefreshInterval,
     refreshOnStartup:
-      typeof raw?.refreshOnStartup === 'boolean' ? raw.refreshOnStartup : DEFAULTS.refreshOnStartup
+      typeof raw?.refreshOnStartup === 'boolean' ? raw.refreshOnStartup : DEFAULTS.refreshOnStartup,
+    showSystemPackages:
+      typeof raw?.showSystemPackages === 'boolean' ? raw.showSystemPackages : DEFAULTS.showSystemPackages,
+    confirmBeforeUninstall:
+      typeof raw?.confirmBeforeUninstall === 'boolean'
+        ? raw.confirmBeforeUninstall
+        : DEFAULTS.confirmBeforeUninstall,
+    confirmBeforeUpgrade:
+      typeof raw?.confirmBeforeUpgrade === 'boolean'
+        ? raw.confirmBeforeUpgrade
+        : DEFAULTS.confirmBeforeUpgrade,
+    confirmBeforeKillPort:
+      typeof raw?.confirmBeforeKillPort === 'boolean'
+        ? raw.confirmBeforeKillPort
+        : DEFAULTS.confirmBeforeKillPort
   }
 }
 

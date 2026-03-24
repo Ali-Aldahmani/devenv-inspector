@@ -1,21 +1,23 @@
-import { useEffect, useState, useCallback } from 'react'
-const DEFAULT_SETTINGS = {
-  theme: 'system',
-  autoRefresh: false,
-  autoRefreshInterval: 60,
-  refreshOnStartup: true
-}
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { APP_SETTINGS_DEFAULTS } from '../appSettingsDefaults'
 
-export default function SettingsModal({ open, onClose, onSettingsUpdated }) {
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS)
+export default function SettingsModal({
+  open,
+  onClose,
+  onSettingsUpdated,
+  scrollToSection = null,
+  onScrollToSectionConsumed
+}) {
+  const [settings, setSettings] = useState(APP_SETTINGS_DEFAULTS)
+  const scrollDoneRef = useRef(false)
   const [resetConfirm, setResetConfirm] = useState(false)
 
   const loadSettings = useCallback(async () => {
     try {
-      const s = await window.electronAPI.getSettings()
-      setSettings({ ...DEFAULT_SETTINGS, ...s })
+            const s = await window.electronAPI.getSettings()
+      setSettings({ ...APP_SETTINGS_DEFAULTS, ...s })
     } catch {
-      setSettings(DEFAULT_SETTINGS)
+      setSettings(APP_SETTINGS_DEFAULTS)
     }
   }, [])
 
@@ -23,12 +25,29 @@ export default function SettingsModal({ open, onClose, onSettingsUpdated }) {
     if (!open) return
     loadSettings()
     setResetConfirm(false)
+    scrollDoneRef.current = false
   }, [open, loadSettings])
+
+  useEffect(() => {
+    if (!open || !scrollToSection || scrollDoneRef.current) return
+    const id =
+      scrollToSection === 'packages'
+        ? 'settings-section-packages'
+        : scrollToSection === 'ports'
+          ? 'settings-section-ports'
+          : null
+    if (!id) return
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      scrollDoneRef.current = true
+      onScrollToSectionConsumed?.()
+    })
+  }, [open, scrollToSection, onScrollToSectionConsumed])
 
   const persist = async (partial) => {
     try {
       const next = await window.electronAPI.saveSettings(partial)
-      setSettings({ ...DEFAULT_SETTINGS, ...next })
+      setSettings({ ...APP_SETTINGS_DEFAULTS, ...next })
       onSettingsUpdated?.(next)
       return next
     } catch {
@@ -43,7 +62,7 @@ export default function SettingsModal({ open, onClose, onSettingsUpdated }) {
   const handleReset = async () => {
     try {
       const next = await window.electronAPI.resetSettings()
-      setSettings({ ...DEFAULT_SETTINGS, ...next })
+      setSettings({ ...APP_SETTINGS_DEFAULTS, ...next })
       onSettingsUpdated?.(next)
       setResetConfirm(false)
     } catch {
@@ -168,6 +187,100 @@ export default function SettingsModal({ open, onClose, onSettingsUpdated }) {
                     </button>
                   ))}
                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="settings-section" id="settings-section-packages">
+          <h3 className="settings-section-heading">PACKAGES</h3>
+          <div className="settings-section-body">
+            <div className="setting-row">
+              <div className="setting-row-text">
+                <div className="setting-label">Show system packages</div>
+                <div className="setting-desc">
+                  Include built-in packages like pip, setuptools, and npm itself
+                </div>
+              </div>
+              <div className="setting-row-control">
+                <button
+                  type="button"
+                  className={`toggle-switch ${settings.showSystemPackages ? 'on' : ''}`}
+                  onClick={() => persist({ showSystemPackages: !settings.showSystemPackages })}
+                  aria-pressed={settings.showSystemPackages}
+                  aria-label="Show system packages"
+                >
+                  <span className="toggle-knob" />
+                </button>
+              </div>
+            </div>
+
+            <div className="setting-row">
+              <div className="setting-row-text">
+                <div className="setting-label">Confirm before uninstall</div>
+                <div className="setting-desc">
+                  Show a confirmation dialog before removing a package
+                </div>
+              </div>
+              <div className="setting-row-control">
+                <button
+                  type="button"
+                  className={`toggle-switch ${settings.confirmBeforeUninstall ? 'on' : ''}`}
+                  onClick={() =>
+                    persist({ confirmBeforeUninstall: !settings.confirmBeforeUninstall })
+                  }
+                  aria-pressed={settings.confirmBeforeUninstall}
+                  aria-label="Confirm before uninstall"
+                >
+                  <span className="toggle-knob" />
+                </button>
+              </div>
+            </div>
+
+            <div className="setting-row setting-row-last">
+              <div className="setting-row-text">
+                <div className="setting-label">Confirm before upgrade</div>
+                <div className="setting-desc">
+                  Show a confirmation dialog before upgrading a package
+                </div>
+              </div>
+              <div className="setting-row-control">
+                <button
+                  type="button"
+                  className={`toggle-switch ${settings.confirmBeforeUpgrade ? 'on' : ''}`}
+                  onClick={() => persist({ confirmBeforeUpgrade: !settings.confirmBeforeUpgrade })}
+                  aria-pressed={settings.confirmBeforeUpgrade}
+                  aria-label="Confirm before upgrade"
+                >
+                  <span className="toggle-knob" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="settings-section" id="settings-section-ports">
+          <h3 className="settings-section-heading">PORTS</h3>
+          <div className="settings-section-body">
+            <div className="setting-row setting-row-last">
+              <div className="setting-row-text">
+                <div className="setting-label">Confirm before killing a process</div>
+                <div className="setting-desc">
+                  Show a confirmation dialog before sending SIGTERM to a port process
+                </div>
+              </div>
+              <div className="setting-row-control">
+                <button
+                  type="button"
+                  className={`toggle-switch ${settings.confirmBeforeKillPort ? 'on' : ''}`}
+                  onClick={() =>
+                    persist({ confirmBeforeKillPort: !settings.confirmBeforeKillPort })
+                  }
+                  aria-pressed={settings.confirmBeforeKillPort}
+                  aria-label="Confirm before killing a process"
+                >
+                  <span className="toggle-knob" />
+                </button>
               </div>
             </div>
           </div>

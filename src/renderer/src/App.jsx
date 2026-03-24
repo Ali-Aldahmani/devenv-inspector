@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import RuntimeCard from './components/RuntimeCard'
 import PackageTable from './components/PackageTable'
 import PortsTable from './components/PortsTable'
@@ -8,6 +8,8 @@ import DiagnosticsPanel from './components/DiagnosticsPanel'
 import PluginsTab from './components/PluginsTab'
 import SettingsModal from './components/SettingsModal'
 import { applyThemePreference } from './theme'
+import { APP_SETTINGS_DEFAULTS } from './appSettingsDefaults'
+import { isSystemPackageName } from './systemPackages'
 
 function mergePackagesWithOutdated(packages, outdatedRows) {
   const byKey = new Map(
@@ -83,6 +85,8 @@ function AppContent() {
 
   const [showCreateEnvModal, setShowCreateEnvModal] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [settingsScrollTarget, setSettingsScrollTarget] = useState(null)
+  const [appSettings, setAppSettings] = useState(() => ({ ...APP_SETTINGS_DEFAULTS }))
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [exportToast, setExportToast] = useState(null)
@@ -148,6 +152,11 @@ function AppContent() {
     }
   }, [loadEnvironments, scanFolders])
 
+  const packagesForTable = useMemo(() => {
+    if (appSettings.showSystemPackages) return packages
+    return packages.filter((p) => !isSystemPackageName(p.name))
+  }, [packages, appSettings.showSystemPackages])
+
   const clearAutoRefresh = useCallback(() => {
     if (autoRefreshTimerRef.current != null) {
       clearInterval(autoRefreshTimerRef.current)
@@ -197,6 +206,9 @@ function AppContent() {
         s = null
       }
       if (cancelled) return
+      if (s) {
+        setAppSettings({ ...APP_SETTINGS_DEFAULTS, ...s })
+      }
       if (s?.theme) {
         setThemePreference(s.theme)
       }
@@ -310,10 +322,16 @@ function AppContent() {
     const nextTheme = effectiveLight ? 'dark' : 'light'
     setThemePreference(nextTheme)
     applyThemePreference(nextTheme)
-    window.electronAPI.saveSettings({ theme: nextTheme }).catch(() => {})
+    window.electronAPI
+      .saveSettings({ theme: nextTheme })
+      .then((full) => {
+        if (full) setAppSettings({ ...APP_SETTINGS_DEFAULTS, ...full })
+      })
+      .catch(() => {})
   }
 
   const handleSettingsUpdated = (s) => {
+    setAppSettings({ ...APP_SETTINGS_DEFAULTS, ...s })
     setThemePreference(s.theme)
     applyThemePreference(s.theme)
     clearAutoRefresh()
@@ -321,6 +339,10 @@ function AppContent() {
       startAutoRefresh(s.autoRefreshInterval ?? 60)
     }
   }
+
+  const handleScrollToSectionConsumed = useCallback(() => {
+    setSettingsScrollTarget(null)
+  }, [])
 
   const handleOpenPath = async (targetPath) => {
     const result = await window.electronAPI.openPath(targetPath)
@@ -427,7 +449,10 @@ function AppContent() {
         <button
           type="button"
           className="btn-settings-open"
-          onClick={() => setShowSettings(true)}
+          onClick={() => {
+            setSettingsScrollTarget(null)
+            setShowSettings(true)
+          }}
           title="Settings"
         >
           ⚙
@@ -508,13 +533,20 @@ function AppContent() {
       {activeTab === 'packages' && (
         <section className="packages-section">
           <PackageTable
-            packages={packages}
+            packages={packagesForTable}
             loading={loading}
             runtimes={runtimes}
             onUninstall={handleUninstall}
             onUpgrade={handleUpgrade}
             onExportToast={showExportToast}
             onFilteredChange={setVisiblePackages}
+            showSystemPackages={appSettings.showSystemPackages}
+            onOpenPackagesSettings={() => {
+              setSettingsScrollTarget('packages')
+              setShowSettings(true)
+            }}
+            confirmBeforeUninstall={appSettings.confirmBeforeUninstall}
+            confirmBeforeUpgrade={appSettings.confirmBeforeUpgrade}
           />
         </section>
       )}
@@ -525,6 +557,7 @@ function AppContent() {
             ports={ports}
             loading={loading}
             onKill={handleKillPort}
+            confirmBeforeKillPort={appSettings.confirmBeforeKillPort}
           />
         </section>
       )}
@@ -581,8 +614,13 @@ function AppContent() {
 
       <SettingsModal
         open={showSettings}
-        onClose={() => setShowSettings(false)}
+        onClose={() => {
+          setShowSettings(false)
+          setSettingsScrollTarget(null)
+        }}
         onSettingsUpdated={handleSettingsUpdated}
+        scrollToSection={settingsScrollTarget}
+        onScrollToSectionConsumed={handleScrollToSectionConsumed}
       />
 
       {toast && (
