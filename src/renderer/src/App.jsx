@@ -5,6 +5,7 @@ import PortsTable from './components/PortsTable'
 import EnvironmentsTable from './components/EnvironmentsTable'
 import CreateEnvironmentModal from './components/CreateEnvironmentModal'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
+import PluginsTab from './components/PluginsTab'
 
 function mergePackagesWithOutdated(packages, outdatedRows) {
   const byKey = new Map(
@@ -37,6 +38,10 @@ export default function App() {
   const [envLoading, setEnvLoading] = useState(false)
   const [diagnostics, setDiagnostics] = useState([])
   const [diagLoading, setDiagLoading] = useState(false)
+  const [installedPlugins, setInstalledPlugins] = useState([])
+  const [pluginCatalog, setPluginCatalog] = useState([])
+  const [pluginsLoading, setPluginsLoading] = useState(false)
+  const [pluginRestartRequired, setPluginRestartRequired] = useState(false)
   const loadDiagnostics = useCallback(async () => {
     setDiagLoading(true)
     try {
@@ -46,6 +51,23 @@ export default function App() {
       setDiagnostics([])
     } finally {
       setDiagLoading(false)
+    }
+  }, [])
+
+  const loadPlugins = useCallback(async () => {
+    setPluginsLoading(true)
+    try {
+      const [installed, catalog] = await Promise.all([
+        window.electronAPI.getInstalledPlugins(),
+        window.electronAPI.getPluginCatalog()
+      ])
+      setInstalledPlugins(Array.isArray(installed) ? installed : [])
+      setPluginCatalog(Array.isArray(catalog) ? catalog : [])
+    } catch {
+      setInstalledPlugins([])
+      setPluginCatalog([])
+    } finally {
+      setPluginsLoading(false)
     }
   }, [])
 
@@ -215,6 +237,11 @@ export default function App() {
     setActiveTab('diagnostics')
     loadDiagnostics()
   }
+
+  const handleOpenPluginsTab = () => {
+    setActiveTab('plugins')
+    loadPlugins()
+  }
   const handleClearDiagnostics = async () => {
     await window.electronAPI.clearDiagnostics()
     await loadDiagnostics()
@@ -226,6 +253,41 @@ export default function App() {
       showToast('Diagnostics copied to clipboard.', 'success')
     } catch {
       showToast('Failed to copy diagnostics.', 'error')
+    }
+  }
+
+  const handleTogglePlugin = async (filename, enabled) => {
+    await window.electronAPI.togglePlugin(filename, enabled)
+    if (enabled) setPluginRestartRequired(true)
+    await loadData()
+    await loadPlugins()
+  }
+
+  const handleDeletePlugin = async (filename) => {
+    await window.electronAPI.deletePlugin(filename)
+    showToast('Plugin deleted.', 'success')
+    await loadPlugins()
+  }
+
+  const handleInstallCatalogPlugin = async (item) => {
+    const result = await window.electronAPI.savePlugin(`${item.name}.js`, item.pluginCode)
+    if (result?.success) {
+      showToast(`${item.label} plugin installed - restart to activate.`, 'success')
+      setPluginRestartRequired(true)
+      await loadPlugins()
+    } else {
+      showToast(result?.error || 'Failed to install plugin.', 'error')
+    }
+  }
+
+  const handleSaveCustomPlugin = async (filename, content) => {
+    const result = await window.electronAPI.savePlugin(filename, content)
+    if (result?.success) {
+      showToast('Plugin saved - restart to activate.', 'success')
+      setPluginRestartRequired(true)
+      await loadPlugins()
+    } else {
+      showToast(result?.error || 'Failed to save plugin.', 'error')
     }
   }
 
@@ -321,6 +383,13 @@ export default function App() {
           Diagnostics
           {diagnostics.length > 0 && <span className="tab-count">{diagnostics.length}</span>}
         </button>
+        <button
+          className={`section-tab ${activeTab === 'plugins' ? 'active' : ''}`}
+          onClick={handleOpenPluginsTab}
+        >
+          ⚙ Plugins
+          <span className="tab-count">{installedPlugins.filter((p) => p.enabled).length}</span>
+        </button>
       </div>
 
       {activeTab === 'packages' && (
@@ -370,6 +439,22 @@ export default function App() {
           onRefresh={loadDiagnostics}
           onClear={handleClearDiagnostics}
           onCopy={handleCopyDiagnostics}
+        />
+      )}
+
+      {activeTab === 'plugins' && (
+        <PluginsTab
+          installed={installedPlugins}
+          catalog={pluginCatalog}
+          restartRequired={pluginRestartRequired}
+          onRestartNow={() => window.electronAPI.restartApp()}
+          onRefreshInstalled={loadPlugins}
+          onToggle={handleTogglePlugin}
+          onDelete={handleDeletePlugin}
+          onInstallCatalog={handleInstallCatalogPlugin}
+          onOpenPluginsDir={() => window.electronAPI.openPluginsDir()}
+          onSaveCustom={handleSaveCustomPlugin}
+          loading={pluginsLoading}
         />
       )}
 

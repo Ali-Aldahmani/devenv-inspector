@@ -1,8 +1,9 @@
 import { getRegisteredRuntimes } from './registry.js'
+import { isRuntimeEnabled } from './pluginManager.js'
 
 export async function detectRuntimes() {
   const results = await Promise.all(
-    getRegisteredRuntimes().map(async (rt) => {
+    getRegisteredRuntimes().filter((rt) => isRuntimeEnabled(rt.name)).map(async (rt) => {
       const out = await rt.detect()
       return [
         rt.name,

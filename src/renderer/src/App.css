@@ -698,6 +698,120 @@ body {
   white-space: pre-wrap;
 }
 
+.plugins-tab {
+  gap: 14px;
+}
+
+.plugin-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plugin-heading {
+  font-family: var(--heading);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.plugin-filename {
+  margin-top: 2px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.plugin-status {
+  font-family: var(--mono);
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.plugin-status-enabled { background: #1a2e1a; color: #2ecc71; border: 1px solid #1e4028; }
+.plugin-status-disabled { background: #1a1c21; color: #888; border: 1px solid #252830; }
+.plugin-status-failed { background: #2a1a1a; color: #e05454; border: 1px solid #4a1a1a; }
+
+.plugin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.plugin-card {
+  background: #16181d;
+  border: 1px solid #252830;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plugin-icon {
+  font-size: 28px;
+  margin-bottom: 2px;
+}
+
+.plugin-label {
+  font-family: var(--heading);
+  font-size: 14px;
+  font-weight: 700;
+  color: #e8e9ec;
+}
+
+.plugin-desc {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #666;
+}
+
+.plugin-cat-language { background: #1e2a3a; color: #4a9eda; border: 1px solid #1e3a56; }
+.plugin-cat-framework { background: #1e1a2e; color: #a78bfa; border: 1px solid #2e1a4a; }
+.plugin-cat-tools { background: #2a1e10; color: #f09220; border: 1px solid #4a2e10; }
+
+.plugin-installed-btn {
+  background: #1a2e1a;
+  color: #2ecc71;
+  border-color: #1e4028;
+  cursor: default;
+}
+
+.plugin-installed-btn:hover {
+  background: #1a2e1a;
+  color: #2ecc71;
+  border-color: #1e4028;
+}
+
+.plugin-restart-banner {
+  background: #2a1e10;
+  color: #f09220;
+  border-bottom: 1px solid #4a2e10;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.custom-plugin-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custom-plugin-editor {
+  background: #0a0b0d;
+  border: 1px solid #1e2026;
+  border-radius: 8px;
+  padding: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #c8c9cc;
+  min-height: 200px;
+}
+
 .create-env-overlay {
   position: fixed;
   inset: 0;

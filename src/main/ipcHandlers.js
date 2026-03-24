@@ -10,6 +10,15 @@ import { readFile, writeFile } from 'fs/promises'
 import { createEnv, getPopularPackages, installPackages } from './envCreator.js'
 import { saveFile, toCSV, toJSON } from './exporter.js'
 import { addDiagnostic, clearDiagnostics, getDiagnostics } from './diagnostics.js'
+import {
+  deletePlugin,
+  getInstalledPlugins,
+  getPluginsDir,
+  savePlugin,
+  togglePlugin,
+  isRuntimeEnabled
+} from './pluginManager.js'
+import { pluginCatalog } from './pluginCatalog.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
 
@@ -111,7 +120,7 @@ export function registerIpcHandlers() {
 
     const all = await Promise.all(
       getRegisteredRuntimes().map(async (rt) => {
-        if (!rt.outdated || !cachedRuntimes?.[rt.name]?.installed) return []
+        if (!isRuntimeEnabled(rt.name) || !rt.outdated || !cachedRuntimes?.[rt.name]?.installed) return []
         try {
           const rows = await rt.outdated()
           if (!Array.isArray(rows)) return []
@@ -243,6 +252,26 @@ export function registerIpcHandlers() {
     } catch (err) {
       return { success: false, error: err.message || 'Unknown error' }
     }
+  })
+
+  ipcMain.handle('get-plugin-catalog', async () => pluginCatalog)
+  ipcMain.handle('get-installed-plugins', async () => getInstalledPlugins())
+  ipcMain.handle('toggle-plugin', async (_event, { filename, enabled }) => {
+    const disabled = await togglePlugin(filename, enabled)
+    return { success: true, disabled }
+  })
+  ipcMain.handle('delete-plugin', async (_event, filename) => deletePlugin(filename))
+  ipcMain.handle('save-plugin', async (_event, { filename, content }) => savePlugin(filename, content))
+  ipcMain.handle('get-plugins-dir', async () => getPluginsDir())
+  ipcMain.handle('open-plugins-dir', async () => {
+    const dir = await getPluginsDir()
+    const error = await shell.openPath(dir)
+    return { success: !error, error: error || null }
+  })
+  ipcMain.handle('restart-app', async () => {
+    app.relaunch()
+    app.exit(0)
+    return { success: true }
   })
 
   ipcMain.handle('kill-port', async (_event, pid) => {

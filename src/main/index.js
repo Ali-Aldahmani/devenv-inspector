@@ -4,6 +4,7 @@ import './runtimes/pyenv.js'
 import { app, BrowserWindow, Menu } from 'electron'
 import { join } from 'path'
 import { registerIpcHandlers } from './ipcHandlers.js'
+import { loadUserPlugins } from './pluginManager.js'
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -56,7 +57,8 @@ function createWindow() {
   Menu.setApplicationMenu(menu)
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await loadUserPlugins()
   registerIpcHandlers()
   createWindow()
 
