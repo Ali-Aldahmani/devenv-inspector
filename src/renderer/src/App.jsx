@@ -30,6 +30,14 @@ function mergePackagesWithOutdated(packages, outdatedRows) {
 }
 
 export default function App() {
+  if (!window.api) {
+    console.error('Preload API not available')
+    return null
+  }
+  return <AppContent />
+}
+
+function AppContent() {
   const [runtimes, setRuntimes] = useState(null)
   const [packages, setPackages] = useState([])
   const [visiblePackages, setVisiblePackages] = useState([])
@@ -80,8 +88,7 @@ export default function App() {
   const [exportToast, setExportToast] = useState(null)
   const [activeTab, setActiveTab] = useState('packages')
   const [themePreference, setThemePreference] = useState(() => {
-    const s = typeof window !== 'undefined' ? window.__DEENV_INITIAL_SETTINGS__ : null
-    const raw = s?.theme ?? localStorage.getItem('devenv-theme') ?? 'system'
+    const raw = localStorage.getItem('devenv-theme') ?? 'system'
     return ['dark', 'light', 'system'].includes(raw) ? raw : 'system'
   })
   const [systemDark, setSystemDark] = useState(() =>

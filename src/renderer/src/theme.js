@@ -16,8 +16,7 @@ export function getEffectiveLight(theme, systemIsDark) {
 }
 
 export function applyInitialTheme() {
-  const s = typeof window !== 'undefined' ? window.__DEENV_INITIAL_SETTINGS__ : null
-  const raw = s?.theme ?? localStorage.getItem('devenv-theme') ?? 'system'
+  const raw = localStorage.getItem('devenv-theme') ?? 'system'
   const theme = ['dark', 'light', 'system'].includes(raw) ? raw : 'system'
   applyThemePreference(theme)
 }
