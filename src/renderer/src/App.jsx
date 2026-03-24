@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import RuntimeCard from './components/RuntimeCard'
 import PackageTable from './components/PackageTable'
 import PortsTable from './components/PortsTable'
@@ -6,6 +6,8 @@ import EnvironmentsTable from './components/EnvironmentsTable'
 import CreateEnvironmentModal from './components/CreateEnvironmentModal'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
 import PluginsTab from './components/PluginsTab'
+import SettingsModal from './components/SettingsModal'
+import { applyThemePreference } from './theme'
 
 function mergePackagesWithOutdated(packages, outdatedRows) {
   const byKey = new Map(
@@ -72,13 +74,26 @@ export default function App() {
   }, [])
 
   const [showCreateEnvModal, setShowCreateEnvModal] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [exportToast, setExportToast] = useState(null)
   const [activeTab, setActiveTab] = useState('packages')
-  const [theme, setTheme] = useState(
-    () => (document.documentElement.classList.contains('light-mode') ? 'light' : 'dark')
+  const [themePreference, setThemePreference] = useState(() => {
+    const s = typeof window !== 'undefined' ? window.__DEENV_INITIAL_SETTINGS__ : null
+    const raw = s?.theme ?? localStorage.getItem('devenv-theme') ?? 'system'
+    return ['dark', 'light', 'system'].includes(raw) ? raw : 'system'
+  })
+  const [systemDark, setSystemDark] = useState(() =>
+    window.matchMedia('(prefers-color-scheme: dark)').matches
   )
+  const activeTabRef = useRef(activeTab)
+  const loadDataRef = useRef(null)
+  const autoRefreshTimerRef = useRef(null)
+
+  useEffect(() => {
+    activeTabRef.current = activeTab
+  }, [activeTab])
 
   const loadEnvironments = useCallback(async (customFolders = scanFolders) => {
     setEnvLoading(true)
@@ -126,9 +141,79 @@ export default function App() {
     }
   }, [loadEnvironments, scanFolders])
 
+  const clearAutoRefresh = useCallback(() => {
+    if (autoRefreshTimerRef.current != null) {
+      clearInterval(autoRefreshTimerRef.current)
+      autoRefreshTimerRef.current = null
+    }
+  }, [])
+
+  const startAutoRefresh = useCallback(
+    (intervalSeconds) => {
+      clearAutoRefresh()
+      autoRefreshTimerRef.current = setInterval(() => {
+        loadDataRef.current?.({
+          includeEnvironments: activeTabRef.current === 'environments'
+        })
+      }, intervalSeconds * 1000)
+    },
+    [clearAutoRefresh]
+  )
+
   useEffect(() => {
-    loadData()
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = () => {
+      setSystemDark(mq.matches)
+      if (themePreference === 'system') {
+        applyThemePreference('system')
+      }
+    }
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [themePreference])
+
+  useEffect(() => {
+    applyThemePreference(themePreference)
+  }, [themePreference])
+
+  useEffect(() => {
+    loadDataRef.current = loadData
   }, [loadData])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      let s = null
+      try {
+        s = await window.electronAPI.getSettings()
+      } catch {
+        s = null
+      }
+      if (cancelled) return
+      if (s?.theme) {
+        setThemePreference(s.theme)
+      }
+      const shouldRefreshStartup = s?.refreshOnStartup !== false
+      if (shouldRefreshStartup) {
+        await loadData({ includeEnvironments: false })
+      } else {
+        setLoading(false)
+      }
+      if (s?.autoRefresh) {
+        startAutoRefresh(s.autoRefreshInterval ?? 60)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [startAutoRefresh])
+
+  useEffect(
+    () => () => {
+      clearAutoRefresh()
+    },
+    [clearAutoRefresh]
+  )
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
@@ -211,11 +296,23 @@ export default function App() {
     }
   }
 
+  const effectiveLight =
+    themePreference === 'light' || (themePreference === 'system' && !systemDark)
+
   const handleThemeToggle = () => {
-    const nextTheme = theme === 'light' ? 'dark' : 'light'
-    setTheme(nextTheme)
-    document.documentElement.classList.toggle('light-mode', nextTheme === 'light')
-    localStorage.setItem('devenv-theme', nextTheme)
+    const nextTheme = effectiveLight ? 'dark' : 'light'
+    setThemePreference(nextTheme)
+    applyThemePreference(nextTheme)
+    window.electronAPI.saveSettings({ theme: nextTheme }).catch(() => {})
+  }
+
+  const handleSettingsUpdated = (s) => {
+    setThemePreference(s.theme)
+    applyThemePreference(s.theme)
+    clearAutoRefresh()
+    if (s.autoRefresh) {
+      startAutoRefresh(s.autoRefreshInterval ?? 60)
+    }
   }
 
   const handleOpenPath = async (targetPath) => {
@@ -319,13 +416,22 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <h1 className="app-title">DevEnv Inspector</h1>
-        <span className="app-version">v0.5.0</span>
+        <span className="app-version">v0.6.0</span>
         <button
+          type="button"
+          className="btn-settings-open"
+          onClick={() => setShowSettings(true)}
+          title="Settings"
+        >
+          ⚙
+        </button>
+        <button
+          type="button"
           className="btn-theme-toggle"
           onClick={handleThemeToggle}
-          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          title={effectiveLight ? 'Switch to dark mode' : 'Switch to light mode'}
         >
-          {theme === 'light' ? '🌙' : '☀️'}
+          {effectiveLight ? '🌙' : '☀️'}
         </button>
         <button
           className="btn-refresh"
@@ -465,6 +571,12 @@ export default function App() {
           onSuccess={handleCreateEnvSuccess}
         />
       )}
+
+      <SettingsModal
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        onSettingsUpdated={handleSettingsUpdated}
+      />
 
       {toast && (
         <div className={`toast toast-${toast.type}`}>

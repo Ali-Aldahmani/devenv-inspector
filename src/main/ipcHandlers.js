@@ -19,6 +19,7 @@ import {
   isRuntimeEnabled
 } from './pluginManager.js'
 import { pluginCatalog } from './pluginCatalog.js'
+import { getSettings, saveSettings, resetSettings } from './settingsStore.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
 
@@ -291,4 +292,8 @@ export function registerIpcHandlers() {
     clearDiagnostics()
     return { success: true }
   })
+
+  ipcMain.handle('get-settings', async () => getSettings())
+  ipcMain.handle('save-settings', async (_event, partial) => saveSettings(partial ?? {}))
+  ipcMain.handle('reset-settings', async () => resetSettings())
 }

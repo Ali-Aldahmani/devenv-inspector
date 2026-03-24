@@ -1,4 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import { getSettingsSync } from '../main/settingsStore.js'
+
+const initialSettings = getSettingsSync()
+contextBridge.exposeInMainWorld('__DEENV_INITIAL_SETTINGS__', initialSettings)
 
 contextBridge.exposeInMainWorld('electronAPI', {
   getRuntimes: () => ipcRenderer.invoke('get-runtimes'),
@@ -41,5 +45,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('upgrade-package', { name, manager }),
   openPath: (targetPath) => ipcRenderer.invoke('open-path', targetPath),
   getPorts: () => ipcRenderer.invoke('get-ports'),
-  killPort: (pid) => ipcRenderer.invoke('kill-port', pid)
+  killPort: (pid) => ipcRenderer.invoke('kill-port', pid),
+  getSettings: () => ipcRenderer.invoke('get-settings'),
+  saveSettings: (partial) => ipcRenderer.invoke('save-settings', partial),
+  resetSettings: () => ipcRenderer.invoke('reset-settings')
 })
