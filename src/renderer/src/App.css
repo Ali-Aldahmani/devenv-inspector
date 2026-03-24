@@ -700,6 +700,9 @@ body {
 
 .plugins-tab {
   gap: 14px;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: visible;
 }
 
 .plugin-section {
@@ -810,6 +813,52 @@ body {
   font-size: 11px;
   color: #c8c9cc;
   min-height: 200px;
+}
+
+.plugin-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.plugin-form-label {
+  font-family: var(--heading);
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #888;
+  letter-spacing: 0.04em;
+}
+
+.required {
+  color: #e05454;
+}
+
+.plugin-form-error {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #e05454;
+  margin-top: -2px;
+}
+
+.plugin-color-input {
+  width: 56px;
+  height: 34px;
+  border: 1px solid #252830;
+  border-radius: 6px;
+  background: #16181d;
+}
+
+.plugin-preview-box {
+  background: #0a0b0d;
+  border: 1px solid #1e2026;
+  border-radius: 8px;
+  padding: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #c8c9cc;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
 }
 
 .create-env-overlay {

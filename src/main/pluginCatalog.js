@@ -104,6 +104,175 @@ registerRuntime({
     })
   },
   {
+    id: 'django',
+    name: 'django',
+    label: 'Django',
+    description: 'Django global CLI tools',
+    category: 'framework',
+    detectCmd: 'python3 -m django --version',
+    icon: '🎸',
+    pluginCode: makeSimplePluginCode({
+      name: 'django',
+      label: 'Django',
+      color: '#2ecc71',
+      detectCmd: 'python3',
+      detectArgs: ['-m', 'django', '--version'],
+      parseRegex: '/^\\s+|\\s+$/g'
+    })
+  },
+  {
+    id: 'fastapi',
+    name: 'fastapi',
+    label: 'FastAPI',
+    description: 'FastAPI + uvicorn global install',
+    category: 'framework',
+    detectCmd: 'python3 -c "import fastapi; print(fastapi.__version__)"',
+    icon: '⚡',
+    pluginCode: makeSimplePluginCode({
+      name: 'fastapi',
+      label: 'FastAPI',
+      color: '#06b6d4',
+      detectCmd: 'python3',
+      detectArgs: ['-c', 'import fastapi; print(fastapi.__version__)'],
+      parseRegex: '/^\\s+|\\s+$/g'
+    })
+  },
+  {
+    id: 'laravel',
+    name: 'laravel',
+    label: 'Laravel',
+    description: 'Laravel installer via Composer',
+    category: 'framework',
+    detectCmd: 'laravel --version',
+    icon: '🔴',
+    pluginCode: makeSimplePluginCode({
+      name: 'laravel',
+      label: 'Laravel',
+      color: '#ef4444',
+      detectCmd: 'laravel',
+      detectArgs: ['--version'],
+      parseRegex: '/^\\s+|\\s+$/g'
+    })
+  },
+  {
+    id: 'nextjs',
+    name: 'nextjs',
+    label: 'Next.js',
+    description: 'Next.js global CLI',
+    category: 'framework',
+    detectCmd: 'next --version',
+    icon: '▲',
+    pluginCode: makeSimplePluginCode({
+      name: 'nextjs',
+      label: 'Next.js',
+      color: '#ffffff',
+      detectCmd: 'next',
+      detectArgs: ['--version'],
+      parseRegex: '/^\\s+|\\s+$/g'
+    })
+  },
+  {
+    id: 'nestjs',
+    name: 'nestjs',
+    label: 'NestJS',
+    description: 'NestJS CLI global install',
+    category: 'framework',
+    detectCmd: 'nest --version',
+    icon: '🐈',
+    pluginCode: makeSimplePluginCode({
+      name: 'nestjs',
+      label: 'NestJS',
+      color: '#e0234e',
+      detectCmd: 'nest',
+      detectArgs: ['--version'],
+      parseRegex: '/^\\s+|\\s+$/g'
+    })
+  },
+  {
+    id: 'vue',
+    name: 'vue',
+    label: 'Vue CLI',
+    description: 'Vue.js global CLI tools',
+    category: 'framework',
+    detectCmd: 'vue --version',
+    icon: '💚',
+    pluginCode: makeSimplePluginCode({
+      name: 'vue',
+      label: 'Vue CLI',
+      color: '#42b883',
+      detectCmd: 'vue',
+      detectArgs: ['--version'],
+      parseRegex: '/^\\s+|\\s+$/g'
+    })
+  },
+  {
+    id: 'angular',
+    name: 'angular',
+    label: 'Angular CLI',
+    description: 'Angular global CLI tools',
+    category: 'framework',
+    detectCmd: 'ng version',
+    icon: '🔺',
+    pluginCode: makeSimplePluginCode({
+      name: 'angular',
+      label: 'Angular CLI',
+      color: '#dd0031',
+      detectCmd: 'ng',
+      detectArgs: ['version'],
+      parseRegex: '/^\\s+|\\s+$/g'
+    })
+  },
+  {
+    id: 'flutter',
+    name: 'flutter',
+    label: 'Flutter',
+    description: 'Flutter SDK detection',
+    category: 'framework',
+    detectCmd: 'flutter --version',
+    icon: '💙',
+    pluginCode: `import { registerRuntime } from '../registry.js'
+import { runInShell } from '../shell.js'
+
+registerRuntime({
+  name: 'flutter',
+  label: 'Flutter',
+  color: '#42a5f5',
+  detect: () => runInShell('flutter', ['--version'], { timeout: 10000 }).catch(() => null),
+  parseVersion: (o) => o.split(/\\r?\\n/)[0].trim(),
+  list: async () => {
+    try {
+      const out = await runInShell('flutter', ['pub', 'global', 'list'], { timeout: 30000, allowNonZero: true })
+      return out.split(/\\r?\\n/).map((line) => {
+        const m = line.match(/^([^\\s]+)\\s+([\\d.]+)/)
+        return m ? { name: m[1], version: m[2] } : null
+      }).filter(Boolean)
+    } catch {
+      return []
+    }
+  },
+  uninstall: (pkg) => ['flutter', ['pub', 'global', 'deactivate', pkg]],
+  outdated: null
+})
+`
+  },
+  {
+    id: 'electron',
+    name: 'electron',
+    label: 'Electron',
+    description: 'Electron global CLI',
+    category: 'framework',
+    detectCmd: 'npx electron --version',
+    icon: '⚛',
+    pluginCode: makeSimplePluginCode({
+      name: 'electron',
+      label: 'Electron',
+      color: '#47848f',
+      detectCmd: 'npx',
+      detectArgs: ['electron', '--version'],
+      parseRegex: '/^\\s+|\\s+$/g'
+    })
+  },
+  {
     id: 'ruby',
     name: 'ruby',
     label: 'Ruby',
