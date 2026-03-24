@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 const api = {
+  platform: process.platform,
   getRuntimes: () => ipcRenderer.invoke('get-runtimes'),
   getPackages: () => ipcRenderer.invoke('get-packages'),
   getOutdated: () => ipcRenderer.invoke('get-outdated'),
@@ -55,6 +56,16 @@ const api = {
     const listener = (_event, data) => cb(data)
     ipcRenderer.on('update-status', listener)
     return () => ipcRenderer.removeListener('update-status', listener)
+  },
+  onSwitchTab: (cb) => {
+    const listener = (_event, tab) => cb(tab)
+    ipcRenderer.on('switch-tab', listener)
+    return () => ipcRenderer.removeListener('switch-tab', listener)
+  },
+  onActivateFilter: (cb) => {
+    const listener = (_event, f) => cb(f)
+    ipcRenderer.on('activate-filter', listener)
+    return () => ipcRenderer.removeListener('activate-filter', listener)
   }
 }
 

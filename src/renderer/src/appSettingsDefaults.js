@@ -15,5 +15,8 @@ export const APP_SETTINGS_DEFAULTS = {
   updateChannel: 'stable',
   accentColor: '#4a9eda',
   fontSize: 'medium',
-  compactMode: false
+  compactMode: false,
+  notifyNewPort: false,
+  notifyPackageUpdates: true,
+  notifyPluginFailure: true
 }

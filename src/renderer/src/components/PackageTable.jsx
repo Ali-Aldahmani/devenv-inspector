@@ -12,10 +12,15 @@ export default function PackageTable({
   showSystemPackages,
   onOpenPackagesSettings,
   confirmBeforeUninstall,
-  confirmBeforeUpgrade
+  confirmBeforeUpgrade,
+  filterManager: filterManagerProp,
+  onFilterManagerChange
 }) {
   const [search, setSearch] = useState('')
-  const [filterManager, setFilterManager] = useState('all')
+  const [internalFilter, setInternalFilter] = useState('all')
+  const controlled = typeof onFilterManagerChange === 'function'
+  const filterManager = controlled ? (filterManagerProp ?? 'all') : internalFilter
+  const setFilterManager = controlled ? onFilterManagerChange : setInternalFilter
   const [pendingPkg, setPendingPkg] = useState(null)
   const [uninstalling, setUninstalling] = useState(null)
   const [upgrading, setUpgrading] = useState(null)

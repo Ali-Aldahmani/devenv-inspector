@@ -609,7 +609,7 @@ export default function SettingsModal({
               </div>
             </div>
 
-            <div className="setting-row setting-row-last">
+            <div className="setting-row">
               <div className="setting-row-text">
                 <div className="setting-label">Update channel</div>
                 <div className="setting-desc">
@@ -650,6 +650,83 @@ export default function SettingsModal({
             >
               {manualCheckBusy ? 'Checking…' : 'Check for updates now'}
             </button>
+          </div>
+        </section>
+
+        <section className="settings-section" id="settings-section-notifications">
+          <h3 className="settings-section-heading">NOTIFICATIONS</h3>
+          <div className="settings-section-body">
+            <div className="setting-row">
+              <div className="setting-row-text">
+                <div className="setting-label">New port opened</div>
+                <div className="setting-desc">
+                  Notify when a new port starts listening on your machine
+                </div>
+                {settings.notifyNewPort && (
+                  <div className="settings-notify-hint">
+                    Triggers when any new port appears during a refresh or auto-refresh
+                  </div>
+                )}
+              </div>
+              <div className="setting-row-control">
+                <button
+                  type="button"
+                  className={`toggle-switch ${settings.notifyNewPort ? 'on' : ''}`}
+                  onClick={() => persist({ notifyNewPort: !settings.notifyNewPort })}
+                  aria-pressed={settings.notifyNewPort}
+                  aria-label="New port opened"
+                >
+                  <span className="toggle-knob" />
+                </button>
+              </div>
+            </div>
+
+            <div className="setting-row">
+              <div className="setting-row-text">
+                <div className="setting-label">Package updates available</div>
+                <div className="setting-desc">
+                  Notify once per session when outdated packages are found
+                </div>
+              </div>
+              <div className="setting-row-control">
+                <button
+                  type="button"
+                  className={`toggle-switch ${settings.notifyPackageUpdates ? 'on' : ''}`}
+                  onClick={() => persist({ notifyPackageUpdates: !settings.notifyPackageUpdates })}
+                  aria-pressed={settings.notifyPackageUpdates}
+                  aria-label="Package updates available"
+                >
+                  <span className="toggle-knob" />
+                </button>
+              </div>
+            </div>
+
+            <div className="setting-row setting-row-last">
+              <div className="setting-row-text">
+                <div className="setting-label">Plugin load failure</div>
+                <div className="setting-desc">
+                  Notify when a community or custom plugin fails to load
+                </div>
+              </div>
+              <div className="setting-row-control">
+                <button
+                  type="button"
+                  className={`toggle-switch ${settings.notifyPluginFailure ? 'on' : ''}`}
+                  onClick={() => persist({ notifyPluginFailure: !settings.notifyPluginFailure })}
+                  aria-pressed={settings.notifyPluginFailure}
+                  aria-label="Plugin load failure"
+                >
+                  <span className="toggle-knob" />
+                </button>
+              </div>
+            </div>
+
+            {window.api?.platform === 'darwin' && (
+              <div className="settings-notify-permission">
+                ⓘ Notifications require system permission. If not appearing, check your OS notification
+                settings.
+              </div>
+            )}
           </div>
         </section>
 

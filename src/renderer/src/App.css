@@ -298,6 +298,22 @@ body {
   line-height: 1.4;
 }
 
+.settings-notify-hint {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #444;
+  margin-top: 6px;
+  line-height: 1.35;
+}
+
+.settings-notify-permission {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #444;
+  margin-top: 8px;
+  line-height: 1.35;
+}
+
 .setting-row-control {
   flex-shrink: 0;
   padding-top: 2px;

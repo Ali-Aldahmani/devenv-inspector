@@ -21,7 +21,10 @@ const DEFAULTS = {
   updateChannel: 'stable',
   accentColor: '#4a9eda',
   fontSize: 'medium',
-  compactMode: false
+  compactMode: false,
+  notifyNewPort: false,
+  notifyPackageUpdates: true,
+  notifyPluginFailure: true
 }
 
 function mergeWithDefaults(raw) {
@@ -70,7 +73,16 @@ function mergeWithDefaults(raw) {
       ? raw.accentColor.trim().toLowerCase()
       : DEFAULTS.accentColor,
     fontSize: ['small', 'medium', 'large'].includes(raw?.fontSize) ? raw.fontSize : DEFAULTS.fontSize,
-    compactMode: typeof raw?.compactMode === 'boolean' ? raw.compactMode : DEFAULTS.compactMode
+    compactMode: typeof raw?.compactMode === 'boolean' ? raw.compactMode : DEFAULTS.compactMode,
+    notifyNewPort: typeof raw?.notifyNewPort === 'boolean' ? raw.notifyNewPort : DEFAULTS.notifyNewPort,
+    notifyPackageUpdates:
+      typeof raw?.notifyPackageUpdates === 'boolean'
+        ? raw.notifyPackageUpdates
+        : DEFAULTS.notifyPackageUpdates,
+    notifyPluginFailure:
+      typeof raw?.notifyPluginFailure === 'boolean'
+        ? raw.notifyPluginFailure
+        : DEFAULTS.notifyPluginFailure
   }
 }
 

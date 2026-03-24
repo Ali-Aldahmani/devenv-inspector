@@ -6,6 +6,7 @@ import { join } from 'path'
 import { registerIpcHandlers } from './ipcHandlers.js'
 import { loadUserPlugins } from './pluginManager.js'
 import { getSettingsSync } from './settingsStore.js'
+import { initNotifier, notifyPluginFailure } from './notifier.js'
 import { initUpdater, checkForUpdates } from './updater.js'
 
 function createWindow() {
@@ -61,9 +62,15 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  await loadUserPlugins()
+  const pluginLoadResult = await loadUserPlugins()
   registerIpcHandlers()
   const mainWindow = createWindow()
+  initNotifier(mainWindow)
+  if (pluginLoadResult?.failed?.length) {
+    for (const f of pluginLoadResult.failed) {
+      notifyPluginFailure(f.name, f.error)
+    }
+  }
   initUpdater(mainWindow)
 
   const settings = getSettingsSync()
@@ -76,6 +83,7 @@ app.whenReady().then(async () => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       const w = createWindow()
+      initNotifier(w)
       initUpdater(w)
     }
   })

@@ -93,6 +93,7 @@ function AppContent() {
   const [exportToast, setExportToast] = useState(null)
   const [updateBanner, setUpdateBanner] = useState(null)
   const [activeTab, setActiveTab] = useState('packages')
+  const [packageFilter, setPackageFilter] = useState('all')
   const [themePreference, setThemePreference] = useState(() => {
     const raw = localStorage.getItem('devenv-theme') ?? 'system'
     return ['dark', 'light', 'system'].includes(raw) ? raw : 'system'
@@ -118,6 +119,19 @@ function AppContent() {
   useEffect(() => {
     scanFoldersRef.current = scanFolders
   }, [scanFolders])
+
+  useEffect(() => {
+    const unsubTab = window.api.onSwitchTab?.((tab) => {
+      if (typeof tab === 'string') setActiveTab(tab)
+    })
+    const unsubFilter = window.api.onActivateFilter?.((filter) => {
+      if (typeof filter === 'string') setPackageFilter(filter)
+    })
+    return () => {
+      unsubTab?.()
+      unsubFilter?.()
+    }
+  }, [])
 
   useEffect(() => {
     const unsub = window.api.onUpdateStatus((data) => {
@@ -692,6 +706,8 @@ function AppContent() {
             onUpgrade={handleUpgrade}
             onExportToast={showExportToast}
             onFilteredChange={setVisiblePackages}
+            filterManager={packageFilter}
+            onFilterManagerChange={setPackageFilter}
             showSystemPackages={appSettings.showSystemPackages}
             onOpenPackagesSettings={() => {
               setSettingsScrollTarget('packages')

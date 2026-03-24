@@ -28,8 +28,13 @@ import {
   setAutoDownload,
   setUpdateChannel
 } from './updater.js'
+import { notifyNewPort, notifyPackageUpdates } from './notifier.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
+
+/** Skip first get-ports snapshot so startup does not notify every existing port */
+let prevPortKeys = null
+let hasNotifiedUpdatesThisSession = false
 
 let cachedRuntimes = null
 const SCAN_FOLDERS_FILE = path.join(app.getPath('userData'), 'scan-folders.json')
@@ -145,11 +150,34 @@ export function registerIpcHandlers() {
       })
     )
 
-    return all.flat()
+    const result = all.flat()
+    if (!hasNotifiedUpdatesThisSession && result.length > 0) {
+      const s = await getSettings()
+      if (s.notifyPackageUpdates) {
+        notifyPackageUpdates(result.length)
+        hasNotifiedUpdatesThisSession = true
+      }
+    }
+    return result
   })
 
   ipcMain.handle('get-ports', async () => {
-    return getActivePorts()
+    const list = await getActivePorts()
+    const keys = new Set(list.map((p) => `${p.port}|${p.protocol}|${p.pid}`))
+
+    if (prevPortKeys !== null) {
+      const settings = await getSettings()
+      if (settings.notifyNewPort) {
+        for (const p of list) {
+          const key = `${p.port}|${p.protocol}|${p.pid}`
+          if (!prevPortKeys.has(key)) {
+            notifyNewPort(p.port, p.process ?? 'unknown')
+          }
+        }
+      }
+    }
+    prevPortKeys = keys
+    return list
   })
 
   ipcMain.handle('get-environments', async (_event, extraPaths = []) => {
