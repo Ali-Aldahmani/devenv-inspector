@@ -10,6 +10,7 @@ import SettingsModal from './components/SettingsModal'
 import { applyThemePreference } from './theme'
 import { APP_SETTINGS_DEFAULTS } from './appSettingsDefaults'
 import { isSystemPackageName } from './systemPackages'
+import { applyAppearanceFromSettings } from './appearance'
 
 function mergePackagesWithOutdated(packages, outdatedRows) {
   const byKey = new Map(
@@ -247,6 +248,7 @@ function AppContent() {
       if (cancelled) return
       if (s) {
         setAppSettings({ ...APP_SETTINGS_DEFAULTS, ...s })
+        applyAppearanceFromSettings(s)
       }
       if (s?.theme) {
         setThemePreference(s.theme)
@@ -376,6 +378,7 @@ function AppContent() {
       s.scanDepth !== prev.scanDepth || sortedFolders(s.excludedFolders) !== sortedFolders(prev.excludedFolders)
 
     setAppSettings({ ...APP_SETTINGS_DEFAULTS, ...s })
+    applyAppearanceFromSettings(s)
     setThemePreference(s.theme)
     applyThemePreference(s.theme)
     clearAutoRefresh()

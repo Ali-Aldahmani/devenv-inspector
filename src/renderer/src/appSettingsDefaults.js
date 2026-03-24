@@ -12,5 +12,8 @@ export const APP_SETTINGS_DEFAULTS = {
   excludedFolders: [],
   checkUpdatesOnLaunch: true,
   autoDownloadUpdates: false,
-  updateChannel: 'stable'
+  updateChannel: 'stable',
+  accentColor: '#4a9eda',
+  fontSize: 'medium',
+  compactMode: false
 }

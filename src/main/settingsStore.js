@@ -18,7 +18,10 @@ const DEFAULTS = {
   excludedFolders: [],
   checkUpdatesOnLaunch: true,
   autoDownloadUpdates: false,
-  updateChannel: 'stable'
+  updateChannel: 'stable',
+  accentColor: '#4a9eda',
+  fontSize: 'medium',
+  compactMode: false
 }
 
 function mergeWithDefaults(raw) {
@@ -62,7 +65,12 @@ function mergeWithDefaults(raw) {
         : DEFAULTS.autoDownloadUpdates,
     updateChannel: ['stable', 'beta'].includes(raw?.updateChannel)
       ? raw.updateChannel
-      : DEFAULTS.updateChannel
+      : DEFAULTS.updateChannel,
+    accentColor: /^#[0-9A-Fa-f]{6}$/.test(String(raw?.accentColor || '').trim())
+      ? raw.accentColor.trim().toLowerCase()
+      : DEFAULTS.accentColor,
+    fontSize: ['small', 'medium', 'large'].includes(raw?.fontSize) ? raw.fontSize : DEFAULTS.fontSize,
+    compactMode: typeof raw?.compactMode === 'boolean' ? raw.compactMode : DEFAULTS.compactMode
   }
 }
 

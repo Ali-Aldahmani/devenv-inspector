@@ -1,5 +1,21 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { APP_SETTINGS_DEFAULTS } from '../appSettingsDefaults'
+import {
+  applyAccentColor,
+  applyAppearanceFromSettings,
+  applyCompactMode,
+  applyFontSize,
+  normalizeHex
+} from '../appearance'
+
+const ACCENT_PRESETS = [
+  { hex: '#4a9eda', label: 'Blue' },
+  { hex: '#2dd4bf', label: 'Teal' },
+  { hex: '#2ecc71', label: 'Green' },
+  { hex: '#f09220', label: 'Amber' },
+  { hex: '#e05454', label: 'Coral' },
+  { hex: '#a78bfa', label: 'Purple' }
+]
 
 const ALWAYS_EXCLUDED_PILLS = [
   'node_modules',
@@ -26,13 +42,17 @@ export default function SettingsModal({
   const [alwaysExcludedOpen, setAlwaysExcludedOpen] = useState(false)
   const [manualCheckBusy, setManualCheckBusy] = useState(false)
   const manualCheckActiveRef = useRef(false)
+  const colorInputRef = useRef(null)
 
   const loadSettings = useCallback(async () => {
     try {
-            const s = await window.electronAPI.getSettings()
-      setSettings({ ...APP_SETTINGS_DEFAULTS, ...s })
+      const s = await window.electronAPI.getSettings()
+      const merged = { ...APP_SETTINGS_DEFAULTS, ...s }
+      setSettings(merged)
+      applyAppearanceFromSettings(merged)
     } catch {
       setSettings(APP_SETTINGS_DEFAULTS)
+      applyAppearanceFromSettings(APP_SETTINGS_DEFAULTS)
     }
   }, [])
 
@@ -114,12 +134,39 @@ export default function SettingsModal({
   const handleReset = async () => {
     try {
       const next = await window.electronAPI.resetSettings()
-      setSettings({ ...APP_SETTINGS_DEFAULTS, ...next })
+      const merged = { ...APP_SETTINGS_DEFAULTS, ...next }
+      setSettings(merged)
+      applyAppearanceFromSettings(merged)
       onSettingsUpdated?.(next)
       setResetConfirm(false)
     } catch {
       setResetConfirm(false)
     }
+  }
+
+  const accentHex = normalizeHex(settings.accentColor) || '#4a9eda'
+  const isPresetActive = (hex) => normalizeHex(hex) === accentHex
+
+  const handleAccentPreset = async (hex) => {
+    applyAccentColor(hex)
+    await persist({ accentColor: normalizeHex(hex) || '#4a9eda' })
+  }
+
+  const handleAccentCustomChange = async (e) => {
+    const v = e.target.value
+    applyAccentColor(v)
+    await persist({ accentColor: normalizeHex(v) || '#4a9eda' })
+  }
+
+  const handleFontSize = async (size) => {
+    applyFontSize(size)
+    await persist({ fontSize: size })
+  }
+
+  const handleCompactToggle = async () => {
+    const next = !settings.compactMode
+    applyCompactMode(next)
+    await persist({ compactMode: next })
   }
 
   if (!open) return null
@@ -148,7 +195,7 @@ export default function SettingsModal({
         <section className="settings-section">
           <h3 className="settings-section-heading">APPEARANCE</h3>
           <div className="settings-section-body">
-            <div className="setting-row setting-row-last">
+            <div className="setting-row">
               <div className="setting-row-text">
                 <div className="setting-label">Theme</div>
                 <div className="setting-desc">Controls the app color scheme</div>
@@ -166,6 +213,95 @@ export default function SettingsModal({
                     </button>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            <div className="setting-row setting-row-accent-colors">
+              <div className="setting-row-text setting-row-text-full">
+                <div className="setting-label">Accent color</div>
+                <div className="setting-desc">Color used for active tabs, badges, and highlights</div>
+                <div className="settings-accent-swatches" role="group" aria-label="Accent color">
+                  {ACCENT_PRESETS.map(({ hex, label }) => (
+                    <button
+                      key={hex}
+                      type="button"
+                      className={`settings-accent-swatch ${isPresetActive(hex) ? 'active' : ''}`}
+                      style={{ backgroundColor: hex }}
+                      title={label}
+                      onClick={() => handleAccentPreset(hex)}
+                      aria-label={label}
+                      aria-pressed={isPresetActive(hex)}
+                    />
+                  ))}
+                  <div className="settings-accent-custom">
+                    <input
+                      ref={colorInputRef}
+                      type="color"
+                      className="settings-accent-color-input-hidden"
+                      value={accentHex}
+                      onChange={handleAccentCustomChange}
+                      aria-label="Custom accent color"
+                    />
+                    <button
+                      type="button"
+                      className={`settings-accent-swatch settings-accent-swatch-custom ${
+                        !ACCENT_PRESETS.some((p) => isPresetActive(p.hex)) ? 'active' : ''
+                      }`}
+                      style={{
+                        background:
+                          ACCENT_PRESETS.some((p) => isPresetActive(p.hex))
+                            ? 'conic-gradient(from 0deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)'
+                            : accentHex
+                      }}
+                      onClick={() => colorInputRef.current?.click()}
+                      title="Custom color"
+                    />
+                    <span className="settings-accent-custom-label">Custom</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="setting-row">
+              <div className="setting-row-text">
+                <div className="setting-label">Font size</div>
+                <div className="setting-desc">Size of text in package and environment tables</div>
+              </div>
+              <div className="setting-row-control">
+                <div className="segmented" role="group" aria-label="Font size">
+                  {[
+                    { id: 'small', label: 'Small' },
+                    { id: 'medium', label: 'Medium' },
+                    { id: 'large', label: 'Large' }
+                  ].map(({ id, label }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      className={`segmented-btn ${(settings.fontSize || 'medium') === id ? 'active' : ''}`}
+                      onClick={() => handleFontSize(id)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="setting-row setting-row-last">
+              <div className="setting-row-text">
+                <div className="setting-label">Compact mode</div>
+                <div className="setting-desc">Reduce row height in all tables for a denser view</div>
+              </div>
+              <div className="setting-row-control">
+                <button
+                  type="button"
+                  className={`toggle-switch ${settings.compactMode ? 'on' : ''}`}
+                  onClick={handleCompactToggle}
+                  aria-pressed={settings.compactMode}
+                  aria-label="Compact mode"
+                >
+                  <span className="toggle-knob" />
+                </button>
               </div>
             </div>
           </div>
