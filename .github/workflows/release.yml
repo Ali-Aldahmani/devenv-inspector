@@ -30,10 +30,10 @@ jobs:
         with:
           node-version: 20
       - run: npm install
-      - run: npx electron-vite build && npx electron-builder --mac --arm64
+      - run: npx electron-vite build && npx electron-builder --mac --arm64 --config.mac.target=dmg
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: mac
-          path: dist/**/*.dmg
+          path: dist/**/*arm64*.dmg
