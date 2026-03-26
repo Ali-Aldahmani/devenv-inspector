@@ -119,6 +119,7 @@ export default function ShortcutsModal({
           isMac={isMac}
           rows={[
             { action: 'exportData', label: 'Export Data' },
+            { action: 'upgradeAllPackages', label: 'Upgrade All Packages' },
             { action: '__tools', label: 'Keyboard Shortcuts', fallback: toolsShortcut }
           ]}
         />

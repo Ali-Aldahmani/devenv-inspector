@@ -29,6 +29,7 @@ import {
   setUpdateChannel
 } from './updater.js'
 import { notifyNewPort, notifyPackageUpdates } from './notifier.js'
+import { upgradeAll } from './upgradeAll.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
 
@@ -125,6 +126,14 @@ export function registerIpcHandlers() {
       addDiagnostic({ source: `upgrade ${manager}`, message: `Failed to upgrade ${name}`, details: message })
       return { success: false, error: message }
     }
+  })
+
+  ipcMain.handle('upgrade-all', async (event, payload = {}) => {
+    const packages = Array.isArray(payload?.packages) ? payload.packages : []
+    const sender = event.sender
+    return upgradeAll(packages, (progressEvent) => {
+      sender.send('upgrade-all-progress', progressEvent)
+    })
   })
 
   ipcMain.handle('get-outdated', async () => {

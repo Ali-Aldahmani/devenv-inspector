@@ -10,6 +10,7 @@ import DiagnosticsPanel from './components/DiagnosticsPanel'
 import PluginsTab from './components/PluginsTab'
 import SettingsModal from './components/SettingsModal'
 import ShortcutsModal from './components/ShortcutsModal'
+import UpgradeAllModal from './components/UpgradeAllModal'
 import { applyThemePreference } from './theme'
 import { APP_SETTINGS_DEFAULTS } from './appSettingsDefaults'
 import { isSystemPackageName } from './systemPackages'
@@ -90,6 +91,7 @@ function AppContent() {
   const [showCreateEnvModal, setShowCreateEnvModal] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showShortcutsModal, setShowShortcutsModal] = useState(false)
+  const [showUpgradeAllModal, setShowUpgradeAllModal] = useState(false)
   const [settingsScrollTarget, setSettingsScrollTarget] = useState(null)
   const [appSettings, setAppSettings] = useState(() => ({ ...APP_SETTINGS_DEFAULTS }))
   const [loading, setLoading] = useState(true)
@@ -114,7 +116,6 @@ function AppContent() {
   const packageTableRef = useRef(null)
   const envTableRef = useRef(null)
   const showSettingsRef = useRef(showSettings)
-  const showShortcutsModalRef = useRef(showShortcutsModal)
   const isMac = isMacClient()
 
   useEffect(() => {
@@ -124,10 +125,6 @@ function AppContent() {
   useEffect(() => {
     showSettingsRef.current = showSettings
   }, [showSettings])
-
-  useEffect(() => {
-    showShortcutsModalRef.current = showShortcutsModal
-  }, [showShortcutsModal])
 
   useEffect(() => {
     appSettingsRef.current = appSettings
@@ -147,10 +144,14 @@ function AppContent() {
     const unsubShortcutsModal = window.api.onOpenShortcutsModal?.(() => {
       setShowShortcutsModal(true)
     })
+    const unsubUpgradeAllModal = window.api.onOpenUpgradeAllModal?.(() => {
+      setShowUpgradeAllModal(true)
+    })
     return () => {
       unsubTab?.()
       unsubFilter?.()
       unsubShortcutsModal?.()
+      unsubUpgradeAllModal?.()
     }
   }, [])
 
@@ -463,6 +464,10 @@ function AppContent() {
   }
 
   const closeModals = useCallback(() => {
+    if (showUpgradeAllModal) {
+      setShowUpgradeAllModal(false)
+      return
+    }
     if (showShortcutsModal) {
       setShowShortcutsModal(false)
       return
@@ -473,7 +478,7 @@ function AppContent() {
       return
     }
     if (showCreateEnvModal) setShowCreateEnvModal(false)
-  }, [showShortcutsModal, showSettings, showCreateEnvModal])
+  }, [showUpgradeAllModal, showShortcutsModal, showSettings, showCreateEnvModal])
 
   const toolsShortcut = isMac ? 'meta+/' : 'ctrl+/'
   const shortcutsWithReference = useMemo(
@@ -516,6 +521,10 @@ function AppContent() {
       openShortcutsModal: () => {
         if (showSettingsRef.current) return
         setShowShortcutsModal(true)
+      },
+      upgradeAllPackages: () => {
+        if (showSettingsRef.current) return
+        setShowUpgradeAllModal(true)
       },
       closeModal: () => closeModals()
     }),
@@ -573,6 +582,17 @@ function AppContent() {
     }),
     [appSettings.shortcuts, isMac]
   )
+
+  const initialOutdatedForUpgrade = useMemo(() => {
+    return (packages || [])
+      .filter((p) => p?.hasUpdate)
+      .map((p) => ({
+        name: p.name,
+        manager: p.manager,
+        current: p.current ?? p.version ?? '',
+        latest: p.latest ?? ''
+      }))
+  }, [packages])
 
   const handleClearDiagnostics = async () => {
     await window.electronAPI.clearDiagnostics()
@@ -947,6 +967,15 @@ function AppContent() {
           setSettingsScrollTarget('shortcuts')
           setShowSettings(true)
         }}
+      />
+
+      <UpgradeAllModal
+        open={showUpgradeAllModal}
+        initialOutdatedPackages={initialOutdatedForUpgrade}
+        onClose={() => setShowUpgradeAllModal(false)}
+        onRefreshPackages={() =>
+          loadDataRef.current?.({ includeEnvironments: activeTabRef.current === 'environments' })
+        }
       />
 
       {toast && (

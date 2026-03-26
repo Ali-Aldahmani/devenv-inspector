@@ -74,7 +74,8 @@ export function useShortcuts(shortcuts, handlers, options = {}) {
         'switchTab5',
         'switchTab6',
         'toggleTheme',
-        'exportData'
+        'exportData',
+        'upgradeAllPackages'
       ]
 
       for (const name of order) {

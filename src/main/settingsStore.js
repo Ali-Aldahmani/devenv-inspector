@@ -19,6 +19,7 @@ function buildDefaultShortcuts() {
     switchTab6: `${mod}+6`,
     toggleTheme: `${mod}+shift+t`,
     exportData: `${mod}+e`,
+    upgradeAllPackages: `${mod}+shift+u`,
     closeModal: 'escape'
   }
 }

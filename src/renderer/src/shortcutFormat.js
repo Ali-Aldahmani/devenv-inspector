@@ -13,6 +13,7 @@ export function buildDefaultShortcutsClient() {
     switchTab6: `${mod}+6`,
     toggleTheme: `${mod}+shift+t`,
     exportData: `${mod}+e`,
+    upgradeAllPackages: `${mod}+shift+u`,
     closeModal: 'escape'
   }
 }
@@ -119,6 +120,7 @@ export const SHORTCUT_ACTION_ORDER = [
   'switchTab6',
   'toggleTheme',
   'exportData',
+  'upgradeAllPackages',
   'closeModal'
 ]
 
@@ -134,5 +136,6 @@ export const SHORTCUT_LABELS = {
   switchTab6: 'Switch to Settings',
   toggleTheme: 'Toggle theme',
   exportData: 'Export data',
+  upgradeAllPackages: 'Upgrade all packages',
   closeModal: 'Close modal'
 }

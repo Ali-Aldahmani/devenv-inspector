@@ -82,6 +82,12 @@ function createWindow() {
           label: 'Keyboard Shortcuts',
           accelerator: process.platform === 'darwin' ? 'Cmd+/' : 'Ctrl+/',
           click: () => win.webContents.send('open-shortcuts-modal')
+        },
+        { type: 'separator' },
+        {
+          label: 'Upgrade All Packages',
+          accelerator: process.platform === 'darwin' ? 'Cmd+Shift+U' : 'Ctrl+Shift+U',
+          click: () => win.webContents.send('open-upgrade-all-modal')
         }
       ]
     }
