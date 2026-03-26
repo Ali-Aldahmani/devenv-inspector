@@ -70,6 +70,9 @@
       "repo": "devenv-inspector"
     }
   },
-  "author": "Ali Aldahmani",
+  "author": {
+  "name": "Ali Aldahmani",
+  "email": "info@bytecra.com"
+},
   "license": "MIT"
 }
