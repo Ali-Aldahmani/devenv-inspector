@@ -29,6 +29,7 @@ export default function UpgradeAllModal({
   const [phase, setPhase] = useState('review') // review | upgrading | done
   const [loading, setLoading] = useState(false)
   const [rows, setRows] = useState([])
+  const [loadError, setLoadError] = useState('')
   const [selectedKeys, setSelectedKeys] = useState(new Set())
   const [logLines, setLogLines] = useState([])
   const [counts, setCounts] = useState({ upgraded: 0, failed: 0, skipped: 0 })
@@ -110,6 +111,7 @@ export default function UpgradeAllModal({
       setErrors([])
       setCounts({ upgraded: 0, failed: 0, skipped: 0 })
       setProgress({ index: 0, total: 0 })
+      setLoadError('')
       setLoading(true)
       try {
         const outdated = list ?? (await window.electronAPI.getOutdated())
@@ -124,6 +126,7 @@ export default function UpgradeAllModal({
       } catch {
         setRows([])
         setSelectedKeys(new Set())
+        setLoadError('Failed to load outdated packages. Please try again.')
       } finally {
         setLoading(false)
       }
@@ -200,7 +203,7 @@ export default function UpgradeAllModal({
             {phase === 'upgrading' ? 'Upgrading Packages...' : phase === 'done' ? 'Upgrade Complete' : 'Upgrade All Packages'}
           </h2>
           {phase === 'upgrading' ? <span className="upgrade-all-spinner">◌</span> : allowCloseDone || phase === 'review' ? (
-            <button type="button" className="upgrade-all-close" onClick={onClose} aria-label="Close">
+            <button type="button" className="upgrade-all-close" onClick={() => onClose()} aria-label="Close">
               ×
             </button>
           ) : null}
@@ -210,6 +213,8 @@ export default function UpgradeAllModal({
           <>
             {loading ? (
               <div className="upgrade-all-loading">Loading outdated packages...</div>
+            ) : loadError ? (
+              <div className="upgrade-all-error-state">{loadError}</div>
             ) : rows.length === 0 ? (
               <div className="upgrade-all-empty">✓ All packages are up to date</div>
             ) : (
@@ -241,7 +246,7 @@ export default function UpgradeAllModal({
                 {selectedKeys.size === rows.length ? 'Deselect All' : 'Select All'}
               </button>
               <div className="upgrade-all-footer-actions">
-                <button type="button" className="btn-cancel" onClick={onClose}>
+                <button type="button" className="btn-cancel" onClick={() => onClose()}>
                   Cancel
                 </button>
                 <button

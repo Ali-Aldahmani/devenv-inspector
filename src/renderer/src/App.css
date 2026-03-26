@@ -419,6 +419,13 @@ body {
   padding: 18px 0;
 }
 
+.upgrade-all-error-state {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #e05454;
+  padding: 14px 0;
+}
+
 .upgrade-all-empty {
   font-family: var(--mono);
   font-size: 12px;

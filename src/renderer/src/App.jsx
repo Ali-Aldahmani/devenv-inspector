@@ -144,15 +144,16 @@ function AppContent() {
     const unsubShortcutsModal = window.api.onOpenShortcutsModal?.(() => {
       setShowShortcutsModal(true)
     })
-    const unsubUpgradeAllModal = window.api.onOpenUpgradeAllModal?.(() => {
-      setShowUpgradeAllModal(true)
-    })
     return () => {
       unsubTab?.()
       unsubFilter?.()
       unsubShortcutsModal?.()
-      unsubUpgradeAllModal?.()
     }
+  }, [])
+
+  useEffect(() => {
+    const unsub = window.api.onOpenUpgradeAllModal?.(() => setShowUpgradeAllModal(true))
+    return () => unsub?.()
   }, [])
 
   useEffect(() => {
