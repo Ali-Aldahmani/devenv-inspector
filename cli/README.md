@@ -3,8 +3,8 @@
   <p>Inspect runtimes, manage global packages, and monitor active local ports from your terminal — no GUI required.</p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-0.3.0-5a7af5?style=for-the-badge" alt="Version" />
-    <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge&logo=apple" alt="Platform" />
+    <img src="https://img.shields.io/badge/version-0.5.0-5a7af5?style=for-the-badge" alt="Version" />
+    <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=for-the-badge" alt="Platform" />
     <img src="https://img.shields.io/badge/license-MIT-44c98b?style=for-the-badge" alt="License" />
     <img src="https://img.shields.io/npm/v/devenv-inspector-cli?style=for-the-badge&logo=npm&color=cc3534" alt="npm" />
   </p>
@@ -159,6 +159,70 @@ TCP ports are colored **blue**, UDP ports **orange**. Only `LISTEN` state TCP so
 
 ---
 
+### `devenv ports --kill <port>`
+Kill the process currently listening on a specific port.
+
+```bash
+devenv ports --kill 3000
+```
+
+---
+
+### `devenv outdated [--runtime <mgr>]`
+Show all outdated global packages (pip, npm, yarn, pnpm). Optionally filter by manager.
+
+```bash
+devenv outdated
+devenv outdated --runtime pip
+devenv outdated --runtime npm
+devenv outdated --runtime yarn
+devenv outdated --runtime pnpm
+```
+
+---
+
+### `devenv upgrade <package> --runtime <mgr>`
+Upgrade one package with confirmation and live output.
+
+```bash
+devenv upgrade requests --runtime pip
+devenv upgrade typescript --runtime npm
+devenv upgrade eslint --runtime yarn
+devenv upgrade prettier --runtime pnpm
+```
+
+---
+
+### `devenv upgrade --all`
+Upgrade all outdated packages sequentially with progress output and summary.
+
+```bash
+devenv upgrade --all
+```
+
+---
+
+### `devenv export [--runtime <mgr>] [--format json|csv] [--output <file>]`
+Export package data as JSON or CSV. Defaults to JSON and writes to stdout unless `--output` is provided.
+
+```bash
+devenv export
+devenv export --format csv
+devenv export --runtime pip --format json --output packages.json
+```
+
+---
+
+### `devenv envs [--path <dir>]`
+Scan and list detected development environments (Python venv, Conda, Node modules, Poetry, Pipenv).
+
+```bash
+devenv envs
+devenv envs --path ~/Projects
+```
+
+---
+
 ## How It Works
 
 All commands run through your login shell (`zsh -i -l -c`) — the same approach as the GUI app — so conda, pyenv, nvm, and other shell-managed tools are always found.
@@ -224,12 +288,17 @@ Bun immediately appears in `devenv list`, `devenv packages --runtime bun`, `deve
 - [x] Docker support
 - [x] **Plugin system** — add any runtime in a single file
 - [x] **`devenv ports`** — active TCP/UDP port viewer with process names
+- [x] **Windows shell support** (`cmd.exe /c`) with cross-platform login shell execution
+- [x] nvm / pyenv version manager support
+- [x] `devenv outdated` command
+- [x] `devenv upgrade <package>` and `devenv upgrade --all`
+- [x] `devenv export` command with json/csv output
+- [x] `devenv envs` environment scanner
 
 ### Upcoming
-- [ ] nvm / pyenv version manager support
-- [ ] `devenv packages --outdated` — highlight packages with available updates
-- [ ] JSON output flag (`--json`) for scripting
-- [ ] Windows & Linux support
+- [ ] Runtime health diagnostics command
+- [ ] Environment create/remove helpers
+- [ ] Custom plugin loading for CLI runtimes
 
 ---
 

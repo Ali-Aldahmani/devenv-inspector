@@ -4,6 +4,7 @@ import { promisify } from 'util'
 const execFileAsync = promisify(execFile)
 
 const SHELL = process.env.SHELL || '/bin/zsh'
+const isWin = process.platform === 'win32'
 
 /**
  * Run a command through the user's login shell.
@@ -15,11 +16,9 @@ const SHELL = process.env.SHELL || '/bin/zsh'
 export async function runInShell(cmd, args, options = {}) {
   const cmdStr = [cmd, ...args].join(' ')
   try {
-    const { stdout } = await execFileAsync(
-      SHELL,
-      ['-i', '-l', '-c', cmdStr],
-      { timeout: options.timeout || 15000 }
-    )
+    const { stdout } = await execFileAsync(isWin ? 'cmd.exe' : SHELL, isWin ? ['/c', cmdStr] : ['-i', '-l', '-c', cmdStr], {
+      timeout: options.timeout || 15000
+    })
     return stdout
   } catch (err) {
     if (options.allowNonZero && err.stdout) return err.stdout
