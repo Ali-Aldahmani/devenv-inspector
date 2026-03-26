@@ -5,6 +5,37 @@ import { readFileSync as readFileSyncFs, existsSync } from 'fs'
 
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json')
 
+function buildDefaultShortcuts() {
+  const mod = process.platform === 'darwin' ? 'meta' : 'ctrl'
+  return {
+    refresh: `${mod}+r`,
+    focusSearch: `${mod}+f`,
+    openSettings: `${mod}+,`,
+    switchTab1: `${mod}+1`,
+    switchTab2: `${mod}+2`,
+    switchTab3: `${mod}+3`,
+    switchTab4: `${mod}+4`,
+    switchTab5: `${mod}+5`,
+    switchTab6: `${mod}+6`,
+    toggleTheme: `${mod}+shift+t`,
+    exportData: `${mod}+e`,
+    upgradeAllPackages: `${mod}+shift+u`,
+    closeModal: 'escape'
+  }
+}
+
+function mergeShortcutsObject(raw, defaults) {
+  const out = { ...defaults }
+  if (!raw || typeof raw !== 'object') return out
+  for (const key of Object.keys(defaults)) {
+    if (Object.prototype.hasOwnProperty.call(raw, key) && typeof raw[key] === 'string') {
+      const t = raw[key].trim().toLowerCase()
+      out[key] = t
+    }
+  }
+  return out
+}
+
 const DEFAULTS = {
   theme: 'system',
   autoRefresh: false,
@@ -24,7 +55,8 @@ const DEFAULTS = {
   compactMode: false,
   notifyNewPort: false,
   notifyPackageUpdates: true,
-  notifyPluginFailure: true
+  notifyPluginFailure: true,
+  shortcuts: buildDefaultShortcuts()
 }
 
 function mergeWithDefaults(raw) {
@@ -82,7 +114,8 @@ function mergeWithDefaults(raw) {
     notifyPluginFailure:
       typeof raw?.notifyPluginFailure === 'boolean'
         ? raw.notifyPluginFailure
-        : DEFAULTS.notifyPluginFailure
+        : DEFAULTS.notifyPluginFailure,
+    shortcuts: mergeShortcutsObject(raw?.shortcuts, buildDefaultShortcuts())
   }
 }
 
@@ -107,7 +140,14 @@ export async function getSettings() {
 
 export async function saveSettings(partial) {
   const current = await getSettings()
-  const next = mergeWithDefaults({ ...current, ...partial })
+  const merged = { ...current, ...partial }
+  if (partial && Object.prototype.hasOwnProperty.call(partial, 'shortcuts')) {
+    merged.shortcuts = mergeShortcutsObject(
+      { ...current.shortcuts, ...partial.shortcuts },
+      buildDefaultShortcuts()
+    )
+  }
+  const next = mergeWithDefaults(merged)
   await writeFile(SETTINGS_FILE, JSON.stringify(next, null, 2), 'utf8')
   return next
 }

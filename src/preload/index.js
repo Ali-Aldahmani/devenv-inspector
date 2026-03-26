@@ -46,12 +46,15 @@ const api = {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (s) => ipcRenderer.invoke('save-settings', s),
   resetSettings: () => ipcRenderer.invoke('reset-settings'),
+  getLatestRuntimeVersions: () => ipcRenderer.invoke('get-latest-runtime-versions'),
+  updateRuntime: (runtime) => ipcRenderer.invoke('update-runtime', runtime),
   checkForUpdates: (opts) => ipcRenderer.invoke('check-for-updates', opts ?? {}),
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
   setAutoDownload: (v) => ipcRenderer.invoke('set-auto-download', v),
   setUpdateChannel: (v) => ipcRenderer.invoke('set-update-channel', v),
   openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url),
+  upgradeAll: (packages) => ipcRenderer.invoke('upgrade-all', { packages }),
   onUpdateStatus: (cb) => {
     const listener = (_event, data) => cb(data)
     ipcRenderer.on('update-status', listener)
@@ -66,7 +69,27 @@ const api = {
     const listener = (_event, f) => cb(f)
     ipcRenderer.on('activate-filter', listener)
     return () => ipcRenderer.removeListener('activate-filter', listener)
-  }
+  },
+  onOpenShortcutsModal: (cb) => {
+    const listener = () => cb()
+    ipcRenderer.on('open-shortcuts-modal', listener)
+    return () => ipcRenderer.removeListener('open-shortcuts-modal', listener)
+  },
+  onUpgradeAllProgress: (cb) => {
+    const listener = (_event, e) => cb(e)
+    ipcRenderer.on('upgrade-all-progress', listener)
+    return () => ipcRenderer.removeListener('upgrade-all-progress', listener)
+  },
+  onOpenUpgradeAllModal: (cb) => {
+    const listener = (_event, payload) => cb(payload)
+    ipcRenderer.on('open-upgrade-all-modal', listener)
+    return () => ipcRenderer.removeListener('open-upgrade-all-modal', listener)
+  },
+  onRuntimeUpdateProgress: (cb) => {
+    const listener = (_event, data) => cb(data)
+    ipcRenderer.on('runtime-update-progress', listener)
+    return () => ipcRenderer.removeListener('runtime-update-progress', listener)
+  },
 }
 
 contextBridge.exposeInMainWorld('electronAPI', api)

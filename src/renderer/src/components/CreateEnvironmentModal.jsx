@@ -109,6 +109,16 @@ export default function CreateEnvironmentModal({
 
   const done = !creating && !createError && step === 3 && progressLines.some((l) => l.level === 'success')
 
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      e.preventDefault()
+      onClose()
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  }, [onClose])
+
   return (
     <div className="create-env-overlay" onClick={onClose}>
       <div className="create-env-modal" onClick={(e) => e.stopPropagation()}>

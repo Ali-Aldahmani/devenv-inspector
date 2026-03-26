@@ -29,6 +29,8 @@ import {
   setUpdateChannel
 } from './updater.js'
 import { notifyNewPort, notifyPackageUpdates } from './notifier.js'
+import { upgradeAll } from './upgradeAll.js'
+import { getLatestVersions, updateRuntime } from './runtimeUpdater.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
 
@@ -125,6 +127,14 @@ export function registerIpcHandlers() {
       addDiagnostic({ source: `upgrade ${manager}`, message: `Failed to upgrade ${name}`, details: message })
       return { success: false, error: message }
     }
+  })
+
+  ipcMain.handle('upgrade-all', async (event, payload = {}) => {
+    const packages = Array.isArray(payload?.packages) ? payload.packages : []
+    const sender = event.sender
+    return upgradeAll(packages, (progressEvent) => {
+      sender.send('upgrade-all-progress', progressEvent)
+    })
   })
 
   ipcMain.handle('get-outdated', async () => {
@@ -375,5 +385,16 @@ export function registerIpcHandlers() {
     } catch (err) {
       return { success: false, error: err?.message || 'Failed to open URL' }
     }
+  })
+
+  ipcMain.handle('get-latest-runtime-versions', async () => {
+    return getLatestVersions()
+  })
+
+  ipcMain.handle('update-runtime', async (event, runtime) => {
+    const sender = event.sender
+    return updateRuntime(String(runtime || '').toLowerCase(), (progress) => {
+      sender.send('runtime-update-progress', progress)
+    })
   })
 }

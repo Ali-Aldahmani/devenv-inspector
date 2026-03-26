@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useShortcuts } from './hooks/useShortcuts'
+import { formatShortcutHint, isMacClient } from './shortcutFormat'
 import RuntimeCard from './components/RuntimeCard'
+import RuntimeUpdateModal from './components/RuntimeUpdateModal'
 import PackageTable from './components/PackageTable'
 import PortsTable from './components/PortsTable'
 import EnvironmentsTable from './components/EnvironmentsTable'
@@ -7,6 +10,8 @@ import CreateEnvironmentModal from './components/CreateEnvironmentModal'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
 import PluginsTab from './components/PluginsTab'
 import SettingsModal from './components/SettingsModal'
+import ShortcutsModal from './components/ShortcutsModal'
+import UpgradeAllModal from './components/UpgradeAllModal'
 import { applyThemePreference } from './theme'
 import { APP_SETTINGS_DEFAULTS } from './appSettingsDefaults'
 import { isSystemPackageName } from './systemPackages'
@@ -55,6 +60,9 @@ function AppContent() {
   const [pluginCatalog, setPluginCatalog] = useState([])
   const [pluginsLoading, setPluginsLoading] = useState(false)
   const [pluginRestartRequired, setPluginRestartRequired] = useState(false)
+  const [latestRuntimeVersions, setLatestRuntimeVersions] = useState({})
+  const [runtimeUpdateModal, setRuntimeUpdateModal] = useState(null)
+  const latestRuntimeCacheRef = useRef(null)
   const loadDiagnostics = useCallback(async () => {
     setDiagLoading(true)
     try {
@@ -86,6 +94,8 @@ function AppContent() {
 
   const [showCreateEnvModal, setShowCreateEnvModal] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false)
+  const [showUpgradeAllModal, setShowUpgradeAllModal] = useState(false)
   const [settingsScrollTarget, setSettingsScrollTarget] = useState(null)
   const [appSettings, setAppSettings] = useState(() => ({ ...APP_SETTINGS_DEFAULTS }))
   const [loading, setLoading] = useState(true)
@@ -107,10 +117,22 @@ function AppContent() {
   const appSettingsRef = useRef(appSettings)
   const scanFoldersRef = useRef(scanFolders)
   const envRescanPendingRef = useRef(false)
+  const packageTableRef = useRef(null)
+  const envTableRef = useRef(null)
+  const showSettingsRef = useRef(showSettings)
+  const acceptUpgradeAllIpcRef = useRef(false)
+  const ignoreUpgradeAllOpenUntilRef = useRef(Date.now() + 6000)
+  const upgradeAllReopenLockRef = useRef(false)
+  const appMountedAtRef = useRef(Date.now())
+  const isMac = isMacClient()
 
   useEffect(() => {
     activeTabRef.current = activeTab
   }, [activeTab])
+
+  useEffect(() => {
+    showSettingsRef.current = showSettings
+  }, [showSettings])
 
   useEffect(() => {
     appSettingsRef.current = appSettings
@@ -127,9 +149,34 @@ function AppContent() {
     const unsubFilter = window.api.onActivateFilter?.((filter) => {
       if (typeof filter === 'string') setPackageFilter(filter)
     })
+    const unsubShortcutsModal = window.api.onOpenShortcutsModal?.(() => {
+      setShowShortcutsModal(true)
+    })
     return () => {
       unsubTab?.()
       unsubFilter?.()
+      unsubShortcutsModal?.()
+    }
+  }, [])
+
+  useEffect(() => {
+    ignoreUpgradeAllOpenUntilRef.current = Date.now() + 6000
+    const t = setTimeout(() => {
+      acceptUpgradeAllIpcRef.current = true
+    }, 1500)
+
+    const unsub = window.api?.onOpenUpgradeAllModal((payload) => {
+      if (!acceptUpgradeAllIpcRef.current) return
+      if (upgradeAllReopenLockRef.current) return
+      if (Date.now() < ignoreUpgradeAllOpenUntilRef.current) return
+      const ts = Number(payload?.ts || 0)
+      // Ignore stale/ghost events that do not carry a fresh timestamp.
+      if (!ts || ts < appMountedAtRef.current) return
+      setShowUpgradeAllModal(true)
+    })
+    return () => {
+      clearTimeout(t)
+      unsub?.()
     }
   }, [])
 
@@ -205,6 +252,22 @@ function AppContent() {
       setLoading(false)
     }
   }, [loadEnvironments, scanFolders])
+
+  const fetchLatestRuntimeVersions = useCallback(async (force = false) => {
+    if (!force && latestRuntimeCacheRef.current) {
+      setLatestRuntimeVersions(latestRuntimeCacheRef.current)
+      return latestRuntimeCacheRef.current
+    }
+    try {
+      const data = await window.api.getLatestRuntimeVersions()
+      const next = data && typeof data === 'object' ? data : {}
+      latestRuntimeCacheRef.current = next
+      setLatestRuntimeVersions(next)
+      return next
+    } catch {
+      return latestRuntimeCacheRef.current || {}
+    }
+  }, [])
 
   const packagesForTable = useMemo(() => {
     if (appSettings.showSystemPackages) return packages
@@ -282,6 +345,13 @@ function AppContent() {
     }
   }, [startAutoRefresh])
 
+  useEffect(() => {
+    const t = setTimeout(() => {
+      fetchLatestRuntimeVersions(false)
+    }, 5000)
+    return () => clearTimeout(t)
+  }, [fetchLatestRuntimeVersions])
+
   useEffect(
     () => () => {
       clearAutoRefresh()
@@ -297,6 +367,35 @@ function AppContent() {
   const showExportToast = (message, type = 'success') => {
     setExportToast({ message, type })
     setTimeout(() => setExportToast(null), 3000)
+  }
+
+  const compareVersions = (installed, latest) => {
+    const parse = (v) =>
+      String(v || '')
+        .replace(/^v/i, '')
+        .split(/[.-]/)
+        .map((p) => Number.parseInt(p, 10))
+        .map((n) => (Number.isFinite(n) ? n : 0))
+    const a = parse(installed)
+    const b = parse(latest)
+    const len = Math.max(a.length, b.length)
+    for (let i = 0; i < len; i += 1) {
+      const av = a[i] ?? 0
+      const bv = b[i] ?? 0
+      if (av > bv) return 1
+      if (av < bv) return -1
+    }
+    return 0
+  }
+
+  const runtimeToUpdater = (key) => {
+    const k = String(key || '').toLowerCase()
+    if (k === 'node-js') return 'node'
+    if (k === 'npm') return 'npm'
+    if (k === 'yarn') return 'yarn'
+    if (k === 'pnpm') return 'pnpm'
+    if (k === 'conda') return 'conda'
+    return null
   }
 
   const runExportFromMenu = useCallback(async (format) => {
@@ -440,6 +539,140 @@ function AppContent() {
     setActiveTab('plugins')
     loadPlugins()
   }
+
+  const closeModals = useCallback(() => {
+    if (showUpgradeAllModal) {
+      setShowUpgradeAllModal(false)
+      return
+    }
+    if (showShortcutsModal) {
+      setShowShortcutsModal(false)
+      return
+    }
+    if (showSettings) {
+      setShowSettings(false)
+      setSettingsScrollTarget(null)
+      return
+    }
+    if (showCreateEnvModal) setShowCreateEnvModal(false)
+  }, [showUpgradeAllModal, showShortcutsModal, showSettings, showCreateEnvModal])
+
+  const toolsShortcut = isMac ? 'meta+/' : 'ctrl+/'
+  const shortcutsWithReference = useMemo(
+    () => ({ ...(appSettings.shortcuts ?? {}), openShortcutsModal: toolsShortcut }),
+    [appSettings.shortcuts, toolsShortcut]
+  )
+
+  const shortcutHandlers = useMemo(
+    () => ({
+      refresh: () => {
+        showToast('Refreshing…', 'info')
+        loadDataRef.current?.({ includeEnvironments: activeTabRef.current === 'environments' })
+      },
+      focusSearch: () => {
+        if (showSettingsRef.current) return
+        const el = document.getElementById('search-input')
+        el?.focus()
+        el?.select()
+      },
+      openSettings: () => {
+        setSettingsScrollTarget(null)
+        setShowSettings((v) => !v)
+      },
+      switchTab1: () => setActiveTab('packages'),
+      switchTab2: () => handleOpenEnvironmentsTab(),
+      switchTab3: () => setActiveTab('ports'),
+      switchTab4: () => handleOpenDiagnosticsTab(),
+      switchTab5: () => handleOpenPluginsTab(),
+      switchTab6: () => {
+        setSettingsScrollTarget(null)
+        setShowSettings(true)
+      },
+      toggleTheme: () => handleThemeToggle(),
+      exportData: () => {
+        if (showSettingsRef.current) return
+        const tab = activeTabRef.current
+        if (tab === 'packages') packageTableRef.current?.openExportMenu?.()
+        else if (tab === 'environments') envTableRef.current?.openExportMenu?.()
+      },
+      openShortcutsModal: () => {
+        if (showSettingsRef.current) return
+        setShowShortcutsModal(true)
+      },
+      upgradeAllPackages: () => {
+        if (showSettingsRef.current) return
+        if (upgradeAllReopenLockRef.current) return
+        if (Date.now() < ignoreUpgradeAllOpenUntilRef.current) return
+        setShowUpgradeAllModal(true)
+      },
+      closeModal: () => closeModals()
+    }),
+    [
+      closeModals,
+      handleOpenDiagnosticsTab,
+      handleOpenEnvironmentsTab,
+      handleOpenPluginsTab,
+      handleThemeToggle
+    ]
+  )
+
+  useShortcuts(shortcutsWithReference, shortcutHandlers)
+
+  const focusShortcutHint = useMemo(
+    () => formatShortcutHint(appSettings.shortcuts?.focusSearch, isMac),
+    [appSettings.shortcuts?.focusSearch, isMac]
+  )
+
+  const searchPlaceholderPackages = useMemo(
+    () => (focusShortcutHint ? `Search packages…  ${focusShortcutHint}` : 'Search packages…'),
+    [focusShortcutHint]
+  )
+  const searchPlaceholderEnvs = useMemo(
+    () => (focusShortcutHint ? `Search environments…  ${focusShortcutHint}` : 'Search environments…'),
+    [focusShortcutHint]
+  )
+  const searchPlaceholderPorts = useMemo(
+    () =>
+      focusShortcutHint
+        ? `Search port, process, or PID…  ${focusShortcutHint}`
+        : 'Search port, process, or PID…',
+    [focusShortcutHint]
+  )
+  const searchPlaceholderPlugins = useMemo(
+    () => (focusShortcutHint ? `Search plugins…  ${focusShortcutHint}` : 'Search plugins…'),
+    [focusShortcutHint]
+  )
+
+  const refreshHint = useMemo(
+    () => formatShortcutHint(appSettings.shortcuts?.refresh, isMac),
+    [appSettings.shortcuts?.refresh, isMac]
+  )
+  const settingsHint = useMemo(
+    () => formatShortcutHint(appSettings.shortcuts?.openSettings, isMac),
+    [appSettings.shortcuts?.openSettings, isMac]
+  )
+  const tabHints = useMemo(
+    () => ({
+      packages: formatShortcutHint(appSettings.shortcuts?.switchTab1, isMac),
+      environments: formatShortcutHint(appSettings.shortcuts?.switchTab2, isMac),
+      ports: formatShortcutHint(appSettings.shortcuts?.switchTab3, isMac),
+      diagnostics: formatShortcutHint(appSettings.shortcuts?.switchTab4, isMac),
+      plugins: formatShortcutHint(appSettings.shortcuts?.switchTab5, isMac)
+    }),
+    [appSettings.shortcuts, isMac]
+  )
+
+  const initialOutdatedForUpgrade = useMemo(() => {
+    return (packages || [])
+      .filter((p) => p?.hasUpdate)
+      .map((p) => ({
+        name: p.name,
+        manager: p.manager,
+        current: p.current ?? p.version ?? '',
+        latest: p.latest ?? ''
+      }))
+  }, [packages])
+
   const handleClearDiagnostics = async () => {
     await window.electronAPI.clearDiagnostics()
     await loadDiagnostics()
@@ -519,7 +752,7 @@ function AppContent() {
     <div className="app">
       <header className="app-header">
         <h1 className="app-title">DevEnv Inspector</h1>
-        <span className="app-version">v0.6.0</span>
+        <span className="app-version">v0.7.0</span>
         <button
           type="button"
           className="btn-settings-open"
@@ -527,7 +760,7 @@ function AppContent() {
             setSettingsScrollTarget(null)
             setShowSettings(true)
           }}
-          title="Settings"
+          title={settingsHint ? `Settings  ${settingsHint}` : 'Settings'}
         >
           ⚙
         </button>
@@ -541,11 +774,15 @@ function AppContent() {
         </button>
         <button
           className="btn-refresh"
-          onClick={() => loadData({ includeEnvironments: activeTab === 'environments' })}
+          onClick={async () => {
+            await loadData({ includeEnvironments: activeTab === 'environments' })
+            await fetchLatestRuntimeVersions(true)
+          }}
           disabled={loading}
           title="Refresh all data"
         >
-          {loading ? 'Loading…' : 'Refresh'}
+          {loading ? 'Loading…' : '↺ Refresh'}
+          {!loading && refreshHint && <span className="shortcut-hint-inline"> {refreshHint}</span>}
         </button>
       </header>
 
@@ -649,6 +886,24 @@ function AppContent() {
                 label={info.label}
                 info={info}
                 loading={loading}
+                hasUpdate={(() => {
+                  const updater = runtimeToUpdater(key)
+                  if (!updater || !info?.installed) return false
+                  const latest = latestRuntimeVersions?.[updater]
+                  if (!latest) return false
+                  return compareVersions(info.version, latest) < 0
+                })()}
+                latestVersion={latestRuntimeVersions?.[runtimeToUpdater(key)] || null}
+                onUpdateClick={() => {
+                  const updater = runtimeToUpdater(key)
+                  if (!updater) return
+                  setRuntimeUpdateModal({
+                    runtime: updater,
+                    label: info.label,
+                    currentVersion: info.version,
+                    latestVersion: latestRuntimeVersions?.[updater] || null
+                  })
+                }}
               />
             ))
           : // Render placeholder cards while loading
@@ -663,12 +918,14 @@ function AppContent() {
         <button
           className={`section-tab ${activeTab === 'packages' ? 'active' : ''}`}
           onClick={() => setActiveTab('packages')}
+          title={tabHints.packages ? `Packages  ${tabHints.packages}` : 'Packages'}
         >
           Packages
         </button>
         <button
           className={`section-tab ${activeTab === 'environments' ? 'active' : ''}`}
           onClick={handleOpenEnvironmentsTab}
+          title={tabHints.environments ? `Environments  ${tabHints.environments}` : 'Environments'}
         >
           Environments
           <span className="tab-count tab-count-env">{environments.length}</span>
@@ -676,6 +933,7 @@ function AppContent() {
         <button
           className={`section-tab ${activeTab === 'ports' ? 'active' : ''}`}
           onClick={() => setActiveTab('ports')}
+          title={tabHints.ports ? `Active Ports  ${tabHints.ports}` : 'Active Ports'}
         >
           Active Ports
           {!loading && ports.length > 0 && <span className="tab-count tab-count-ports">{ports.length}</span>}
@@ -683,6 +941,7 @@ function AppContent() {
         <button
           className={`section-tab ${activeTab === 'diagnostics' ? 'active' : ''}`}
           onClick={handleOpenDiagnosticsTab}
+          title={tabHints.diagnostics ? `Diagnostics  ${tabHints.diagnostics}` : 'Diagnostics'}
         >
           Diagnostics
           {diagnostics.length > 0 && <span className="tab-count">{diagnostics.length}</span>}
@@ -690,6 +949,7 @@ function AppContent() {
         <button
           className={`section-tab ${activeTab === 'plugins' ? 'active' : ''}`}
           onClick={handleOpenPluginsTab}
+          title={tabHints.plugins ? `Plugins  ${tabHints.plugins}` : 'Plugins'}
         >
           ⚙ Plugins
           <span className="tab-count">{installedPlugins.filter((p) => p.enabled).length}</span>
@@ -699,6 +959,7 @@ function AppContent() {
       {activeTab === 'packages' && (
         <section className="packages-section">
           <PackageTable
+            ref={packageTableRef}
             packages={packagesForTable}
             loading={loading}
             runtimes={runtimes}
@@ -715,6 +976,7 @@ function AppContent() {
             }}
             confirmBeforeUninstall={appSettings.confirmBeforeUninstall}
             confirmBeforeUpgrade={appSettings.confirmBeforeUpgrade}
+            searchPlaceholder={searchPlaceholderPackages}
           />
         </section>
       )}
@@ -726,6 +988,7 @@ function AppContent() {
             loading={loading}
             onKill={handleKillPort}
             confirmBeforeKillPort={appSettings.confirmBeforeKillPort}
+            searchPlaceholder={searchPlaceholderPorts}
           />
         </section>
       )}
@@ -733,6 +996,7 @@ function AppContent() {
       {activeTab === 'environments' && (
         <section className="packages-section">
           <EnvironmentsTable
+            ref={envTableRef}
             environments={environments}
             loading={envLoading}
             onOpen={handleOpenPath}
@@ -742,6 +1006,7 @@ function AppContent() {
             onNewEnvironment={() => setShowCreateEnvModal(true)}
             onExportToast={showExportToast}
             onFilteredChange={setVisibleEnvironments}
+            searchPlaceholder={searchPlaceholderEnvs}
           />
         </section>
       )}
@@ -760,6 +1025,7 @@ function AppContent() {
         <PluginsTab
           installed={installedPlugins}
           catalog={pluginCatalog}
+          searchPlaceholder={searchPlaceholderPlugins}
           restartRequired={pluginRestartRequired}
           onRestartNow={() => window.electronAPI.restartApp()}
           onRefreshInstalled={loadPlugins}
@@ -791,6 +1057,45 @@ function AppContent() {
         onScrollToSectionConsumed={handleScrollToSectionConsumed}
       />
 
+      <ShortcutsModal
+        open={showShortcutsModal}
+        shortcuts={appSettings.shortcuts ?? {}}
+        isMac={isMac}
+        onClose={() => setShowShortcutsModal(false)}
+        onOpenSettingsShortcuts={() => {
+          setShowShortcutsModal(false)
+          setSettingsScrollTarget('shortcuts')
+          setShowSettings(true)
+        }}
+      />
+
+      <UpgradeAllModal
+        open={showUpgradeAllModal}
+        initialOutdatedPackages={initialOutdatedForUpgrade}
+        onClose={() => {
+          upgradeAllReopenLockRef.current = true
+          ignoreUpgradeAllOpenUntilRef.current = Date.now() + 2500
+          setShowUpgradeAllModal(false)
+          setTimeout(() => {
+            upgradeAllReopenLockRef.current = false
+          }, 2500)
+        }}
+        onRefreshPackages={() =>
+          loadDataRef.current?.({ includeEnvironments: activeTabRef.current === 'environments' })
+        }
+      />
+
+      <RuntimeUpdateModal
+        open={Boolean(runtimeUpdateModal)}
+        runtime={runtimeUpdateModal?.runtime || ''}
+        label={runtimeUpdateModal?.label || ''}
+        currentVersion={runtimeUpdateModal?.currentVersion || ''}
+        latestVersion={runtimeUpdateModal?.latestVersion || ''}
+        onClose={() => setRuntimeUpdateModal(null)}
+        onRestart={() => window.electronAPI.restartApp()}
+        onRefreshLatest={() => fetchLatestRuntimeVersions(true)}
+      />
+
       {toast && (
         <div className={`toast toast-${toast.type}`}>
           {toast.message}
@@ -804,3 +1109,4 @@ function AppContent() {
     </div>
   )
 }
+

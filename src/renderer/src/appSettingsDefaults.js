@@ -1,3 +1,5 @@
+import { buildDefaultShortcutsClient } from './shortcutFormat.js'
+
 /** Default app settings — must match merge defaults in src/main/settingsStore.js */
 export const APP_SETTINGS_DEFAULTS = {
   theme: 'system',
@@ -18,5 +20,6 @@ export const APP_SETTINGS_DEFAULTS = {
   compactMode: false,
   notifyNewPort: false,
   notifyPackageUpdates: true,
-  notifyPluginFailure: true
+  notifyPluginFailure: true,
+  shortcuts: buildDefaultShortcutsClient()
 }

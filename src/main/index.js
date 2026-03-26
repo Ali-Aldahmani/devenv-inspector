@@ -74,6 +74,22 @@ function createWindow() {
           click: () => win.webContents.send('menu-action', { action: 'export-csv' })
         }
       ]
+    },
+    {
+      label: 'Tools',
+      submenu: [
+        {
+          label: 'Keyboard Shortcuts',
+          accelerator: process.platform === 'darwin' ? 'Cmd+/' : 'Ctrl+/',
+          click: () => win.webContents.send('open-shortcuts-modal')
+        },
+        { type: 'separator' },
+        {
+          label: 'Upgrade All Packages',
+          accelerator: process.platform === 'darwin' ? 'Cmd+Shift+U' : 'Ctrl+Shift+U',
+          click: () => win.webContents.send('open-upgrade-all-modal', { ts: Date.now() })
+        }
+      ]
     }
   ])
   Menu.setApplicationMenu(menu)

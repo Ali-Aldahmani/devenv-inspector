@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 
 function formatRelativeTime(isoDate) {
   const then = new Date(isoDate).getTime()
@@ -37,22 +37,30 @@ function typeClass(type) {
   return ''
 }
 
-export default function EnvironmentsTable({
-  environments,
-  loading,
-  onOpen,
-  scanFolders,
-  onAddFolder,
-  onRemoveFolder,
-  onNewEnvironment,
-  onExportToast,
-  onFilteredChange
-}) {
+const EnvironmentsTable = forwardRef(function EnvironmentsTable(
+  {
+    environments,
+    loading,
+    onOpen,
+    scanFolders,
+    onAddFolder,
+    onRemoveFolder,
+    onNewEnvironment,
+    onExportToast,
+    onFilteredChange,
+    searchPlaceholder
+  },
+  ref
+) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [showExportMenu, setShowExportMenu] = useState(false)
   const exportRef = useRef(null)
   const lastFilteredSignatureRef = useRef('')
+
+  useImperativeHandle(ref, () => ({
+    openExportMenu: () => setShowExportMenu(true)
+  }))
 
   const filtered = useMemo(() => {
     return (environments || []).filter((env) => {
@@ -95,9 +103,10 @@ export default function EnvironmentsTable({
     <div className="package-table-wrapper">
       <div className="table-controls">
         <input
+          id="search-input"
           className="search-input"
           type="text"
-          placeholder="Search environments..."
+          placeholder={searchPlaceholder ?? 'Search environments...'}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -194,4 +203,6 @@ export default function EnvironmentsTable({
       )}
     </div>
   )
-}
+})
+
+export default EnvironmentsTable
