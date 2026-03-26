@@ -152,8 +152,9 @@ function AppContent() {
   }, [])
 
   useEffect(() => {
-    const unsub = window.api.onOpenUpgradeAllModal?.(() => setShowUpgradeAllModal(true))
-    return () => unsub?.()
+    window.api?.onOpenUpgradeAllModal(() => {
+      setShowUpgradeAllModal(true)
+    })
   }, [])
 
   useEffect(() => {

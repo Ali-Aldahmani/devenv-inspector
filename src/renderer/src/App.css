@@ -356,8 +356,12 @@ body {
 
 .upgrade-all-overlay {
   position: fixed;
-  inset: 0;
-  z-index: 630;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  pointer-events: all;
   background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
@@ -366,6 +370,9 @@ body {
 }
 
 .upgrade-all-modal {
+  position: relative;
+  z-index: 10000;
+  pointer-events: all;
   width: 560px;
   max-height: 78vh;
   overflow-y: auto;
@@ -373,6 +380,13 @@ body {
   background: #131417;
   border: 1px solid #252830;
   border-radius: 12px;
+}
+
+.upgrade-all-modal button {
+  position: relative;
+  z-index: 10001;
+  pointer-events: all;
+  cursor: pointer;
 }
 
 .upgrade-all-header {
@@ -390,6 +404,9 @@ body {
 }
 
 .upgrade-all-close {
+  position: relative;
+  z-index: 10001;
+  pointer-events: all;
   background: none;
   border: none;
   color: #888;
@@ -504,6 +521,9 @@ body {
 }
 
 .upgrade-all-link-btn {
+  position: relative;
+  z-index: 10001;
+  pointer-events: all;
   border: none;
   background: none;
   color: var(--accent);
@@ -514,6 +534,9 @@ body {
 }
 
 .upgrade-all-primary {
+  position: relative;
+  z-index: 10001;
+  pointer-events: all;
   font-family: var(--mono);
   font-size: 11px;
   border-radius: 6px;
