@@ -1,6 +1,6 @@
 {
   "name": "devenv-inspector",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "A unified GUI for viewing and managing dev runtimes and global packages",
   "main": "out/main/index.js",
   "scripts": {
@@ -91,3 +91,4 @@
   },
   "license": "MIT"
 }
+
