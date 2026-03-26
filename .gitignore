@@ -1,7 +1,13 @@
 node_modules/
 out/
 dist/
-build/
+# build/ — ignore generated artifacts except committed app icons
+build/*
+!build/icon.icns
+!build/icon.ico
+!build/icon.png
+!build/icons/
+!build/icons/**
 .DS_Store
 *.log
 media/icon-preview.png
