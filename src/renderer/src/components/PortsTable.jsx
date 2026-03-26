@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import KillDialog from './KillDialog'
 
-export default function PortsTable({ ports, loading, onKill, confirmBeforeKillPort }) {
+export default function PortsTable({ ports, loading, onKill, confirmBeforeKillPort, searchPlaceholder }) {
   const [search, setSearch] = useState('')
   const [filterProtocol, setFilterProtocol] = useState('all')
   const [pendingPort, setPendingPort] = useState(null)
@@ -40,9 +40,10 @@ export default function PortsTable({ ports, loading, onKill, confirmBeforeKillPo
     <div className="package-table-wrapper">
       <div className="table-controls">
         <input
+          id="search-input"
           className="search-input"
           type="text"
-          placeholder="Search port, process, or PID…"
+          placeholder={searchPlaceholder ?? 'Search port, process, or PID…'}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

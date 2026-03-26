@@ -66,7 +66,9 @@ export default function PluginsTab({
   onDelete,
   onInstallCatalog,
   onOpenPluginsDir,
-  onSaveCustom
+  onSaveCustom,
+  loading,
+  searchPlaceholder
 }) {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('all')
@@ -167,8 +169,9 @@ export default function PluginsTab({
         <div className="table-controls">
           <h3 className="plugin-heading">Plugin Catalog</h3>
           <input
+            id="search-input"
             className="search-input"
-            placeholder="Search plugins..."
+            placeholder={searchPlaceholder ?? 'Search plugins...'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

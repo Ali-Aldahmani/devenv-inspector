@@ -111,7 +111,16 @@ body {
   padding: 2px 7px;
 }
 
+.shortcut-hint-inline {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: #3a3d44;
+}
+
 .btn-refresh {
+  display: inline-flex;
+  align-items: center;
   margin-left: auto;
   -webkit-app-region: no-drag;
   font-family: var(--mono);
@@ -1826,6 +1835,68 @@ body {
 
 .toast-success { border-color: #1e4028; color: #2ecc71; }
 .toast-error { border-color: #4a1a1a; color: #e05454; }
+.toast-info { border-color: #252830; color: var(--text-secondary); }
+
+.settings-shortcuts-desc {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #555;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.settings-shortcut-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #888;
+  background: #16181d;
+  border: 1px solid #252830;
+  border-radius: 5px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.settings-shortcut-badge:hover {
+  border-color: #3a4050;
+  color: #e8e9ec;
+}
+
+.settings-shortcut-badge.recording {
+  background: #1e2c3a;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.setting-row-shortcut {
+  align-items: flex-start;
+}
+
+.settings-shortcut-conflict {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #f09220;
+  margin-top: 4px;
+}
+
+.settings-reset-shortcuts-link {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #555;
+  margin-bottom: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.settings-reset-shortcuts-link:hover {
+  color: #888;
+}
 
 .export-toast {
   position: fixed;

@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useShortcuts } from './hooks/useShortcuts'
+import { formatShortcutHint, isMacClient } from './shortcutFormat'
 import RuntimeCard from './components/RuntimeCard'
 import PackageTable from './components/PackageTable'
 import PortsTable from './components/PortsTable'
@@ -107,10 +109,18 @@ function AppContent() {
   const appSettingsRef = useRef(appSettings)
   const scanFoldersRef = useRef(scanFolders)
   const envRescanPendingRef = useRef(false)
+  const packageTableRef = useRef(null)
+  const envTableRef = useRef(null)
+  const showSettingsRef = useRef(showSettings)
+  const isMac = isMacClient()
 
   useEffect(() => {
     activeTabRef.current = activeTab
   }, [activeTab])
+
+  useEffect(() => {
+    showSettingsRef.current = showSettings
+  }, [showSettings])
 
   useEffect(() => {
     appSettingsRef.current = appSettings
@@ -440,6 +450,105 @@ function AppContent() {
     setActiveTab('plugins')
     loadPlugins()
   }
+
+  const closeModals = useCallback(() => {
+    if (showSettings) {
+      setShowSettings(false)
+      setSettingsScrollTarget(null)
+      return
+    }
+    if (showCreateEnvModal) setShowCreateEnvModal(false)
+  }, [showSettings, showCreateEnvModal])
+
+  const shortcutHandlers = useMemo(
+    () => ({
+      refresh: () => {
+        showToast('Refreshing…', 'info')
+        loadDataRef.current?.({ includeEnvironments: activeTabRef.current === 'environments' })
+      },
+      focusSearch: () => {
+        if (showSettingsRef.current) return
+        const el = document.getElementById('search-input')
+        el?.focus()
+        el?.select()
+      },
+      openSettings: () => {
+        setSettingsScrollTarget(null)
+        setShowSettings((v) => !v)
+      },
+      switchTab1: () => setActiveTab('packages'),
+      switchTab2: () => handleOpenEnvironmentsTab(),
+      switchTab3: () => setActiveTab('ports'),
+      switchTab4: () => handleOpenDiagnosticsTab(),
+      switchTab5: () => handleOpenPluginsTab(),
+      switchTab6: () => {
+        setSettingsScrollTarget(null)
+        setShowSettings(true)
+      },
+      toggleTheme: () => handleThemeToggle(),
+      exportData: () => {
+        if (showSettingsRef.current) return
+        const tab = activeTabRef.current
+        if (tab === 'packages') packageTableRef.current?.openExportMenu?.()
+        else if (tab === 'environments') envTableRef.current?.openExportMenu?.()
+      },
+      closeModal: () => closeModals()
+    }),
+    [
+      closeModals,
+      handleOpenDiagnosticsTab,
+      handleOpenEnvironmentsTab,
+      handleOpenPluginsTab,
+      handleThemeToggle
+    ]
+  )
+
+  useShortcuts(appSettings.shortcuts ?? {}, shortcutHandlers)
+
+  const focusShortcutHint = useMemo(
+    () => formatShortcutHint(appSettings.shortcuts?.focusSearch, isMac),
+    [appSettings.shortcuts?.focusSearch, isMac]
+  )
+
+  const searchPlaceholderPackages = useMemo(
+    () => (focusShortcutHint ? `Search packages…  ${focusShortcutHint}` : 'Search packages…'),
+    [focusShortcutHint]
+  )
+  const searchPlaceholderEnvs = useMemo(
+    () => (focusShortcutHint ? `Search environments…  ${focusShortcutHint}` : 'Search environments…'),
+    [focusShortcutHint]
+  )
+  const searchPlaceholderPorts = useMemo(
+    () =>
+      focusShortcutHint
+        ? `Search port, process, or PID…  ${focusShortcutHint}`
+        : 'Search port, process, or PID…',
+    [focusShortcutHint]
+  )
+  const searchPlaceholderPlugins = useMemo(
+    () => (focusShortcutHint ? `Search plugins…  ${focusShortcutHint}` : 'Search plugins…'),
+    [focusShortcutHint]
+  )
+
+  const refreshHint = useMemo(
+    () => formatShortcutHint(appSettings.shortcuts?.refresh, isMac),
+    [appSettings.shortcuts?.refresh, isMac]
+  )
+  const settingsHint = useMemo(
+    () => formatShortcutHint(appSettings.shortcuts?.openSettings, isMac),
+    [appSettings.shortcuts?.openSettings, isMac]
+  )
+  const tabHints = useMemo(
+    () => ({
+      packages: formatShortcutHint(appSettings.shortcuts?.switchTab1, isMac),
+      environments: formatShortcutHint(appSettings.shortcuts?.switchTab2, isMac),
+      ports: formatShortcutHint(appSettings.shortcuts?.switchTab3, isMac),
+      diagnostics: formatShortcutHint(appSettings.shortcuts?.switchTab4, isMac),
+      plugins: formatShortcutHint(appSettings.shortcuts?.switchTab5, isMac)
+    }),
+    [appSettings.shortcuts, isMac]
+  )
+
   const handleClearDiagnostics = async () => {
     await window.electronAPI.clearDiagnostics()
     await loadDiagnostics()
@@ -527,7 +636,7 @@ function AppContent() {
             setSettingsScrollTarget(null)
             setShowSettings(true)
           }}
-          title="Settings"
+          title={settingsHint ? `Settings  ${settingsHint}` : 'Settings'}
         >
           ⚙
         </button>
@@ -545,7 +654,8 @@ function AppContent() {
           disabled={loading}
           title="Refresh all data"
         >
-          {loading ? 'Loading…' : 'Refresh'}
+          {loading ? 'Loading…' : '↺ Refresh'}
+          {!loading && refreshHint && <span className="shortcut-hint-inline"> {refreshHint}</span>}
         </button>
       </header>
 
@@ -663,12 +773,14 @@ function AppContent() {
         <button
           className={`section-tab ${activeTab === 'packages' ? 'active' : ''}`}
           onClick={() => setActiveTab('packages')}
+          title={tabHints.packages ? `Packages  ${tabHints.packages}` : 'Packages'}
         >
           Packages
         </button>
         <button
           className={`section-tab ${activeTab === 'environments' ? 'active' : ''}`}
           onClick={handleOpenEnvironmentsTab}
+          title={tabHints.environments ? `Environments  ${tabHints.environments}` : 'Environments'}
         >
           Environments
           <span className="tab-count tab-count-env">{environments.length}</span>
@@ -676,6 +788,7 @@ function AppContent() {
         <button
           className={`section-tab ${activeTab === 'ports' ? 'active' : ''}`}
           onClick={() => setActiveTab('ports')}
+          title={tabHints.ports ? `Active Ports  ${tabHints.ports}` : 'Active Ports'}
         >
           Active Ports
           {!loading && ports.length > 0 && <span className="tab-count tab-count-ports">{ports.length}</span>}
@@ -683,6 +796,7 @@ function AppContent() {
         <button
           className={`section-tab ${activeTab === 'diagnostics' ? 'active' : ''}`}
           onClick={handleOpenDiagnosticsTab}
+          title={tabHints.diagnostics ? `Diagnostics  ${tabHints.diagnostics}` : 'Diagnostics'}
         >
           Diagnostics
           {diagnostics.length > 0 && <span className="tab-count">{diagnostics.length}</span>}
@@ -690,6 +804,7 @@ function AppContent() {
         <button
           className={`section-tab ${activeTab === 'plugins' ? 'active' : ''}`}
           onClick={handleOpenPluginsTab}
+          title={tabHints.plugins ? `Plugins  ${tabHints.plugins}` : 'Plugins'}
         >
           ⚙ Plugins
           <span className="tab-count">{installedPlugins.filter((p) => p.enabled).length}</span>
@@ -699,6 +814,7 @@ function AppContent() {
       {activeTab === 'packages' && (
         <section className="packages-section">
           <PackageTable
+            ref={packageTableRef}
             packages={packagesForTable}
             loading={loading}
             runtimes={runtimes}
@@ -715,6 +831,7 @@ function AppContent() {
             }}
             confirmBeforeUninstall={appSettings.confirmBeforeUninstall}
             confirmBeforeUpgrade={appSettings.confirmBeforeUpgrade}
+            searchPlaceholder={searchPlaceholderPackages}
           />
         </section>
       )}
@@ -726,6 +843,7 @@ function AppContent() {
             loading={loading}
             onKill={handleKillPort}
             confirmBeforeKillPort={appSettings.confirmBeforeKillPort}
+            searchPlaceholder={searchPlaceholderPorts}
           />
         </section>
       )}
@@ -733,6 +851,7 @@ function AppContent() {
       {activeTab === 'environments' && (
         <section className="packages-section">
           <EnvironmentsTable
+            ref={envTableRef}
             environments={environments}
             loading={envLoading}
             onOpen={handleOpenPath}
@@ -742,6 +861,7 @@ function AppContent() {
             onNewEnvironment={() => setShowCreateEnvModal(true)}
             onExportToast={showExportToast}
             onFilteredChange={setVisibleEnvironments}
+            searchPlaceholder={searchPlaceholderEnvs}
           />
         </section>
       )}
@@ -760,6 +880,7 @@ function AppContent() {
         <PluginsTab
           installed={installedPlugins}
           catalog={pluginCatalog}
+          searchPlaceholder={searchPlaceholderPlugins}
           restartRequired={pluginRestartRequired}
           onRestartNow={() => window.electronAPI.restartApp()}
           onRefreshInstalled={loadPlugins}

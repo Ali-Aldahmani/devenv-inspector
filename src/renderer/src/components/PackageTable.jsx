@@ -1,21 +1,25 @@
-import { useEffect, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import ConfirmDialog from './ConfirmDialog'
 
-export default function PackageTable({
-  packages,
-  loading,
-  runtimes,
-  onUninstall,
-  onUpgrade,
-  onExportToast,
-  onFilteredChange,
-  showSystemPackages,
-  onOpenPackagesSettings,
-  confirmBeforeUninstall,
-  confirmBeforeUpgrade,
-  filterManager: filterManagerProp,
-  onFilterManagerChange
-}) {
+const PackageTable = forwardRef(function PackageTable(
+  {
+    packages,
+    loading,
+    runtimes,
+    onUninstall,
+    onUpgrade,
+    onExportToast,
+    onFilteredChange,
+    showSystemPackages,
+    onOpenPackagesSettings,
+    confirmBeforeUninstall,
+    confirmBeforeUpgrade,
+    filterManager: filterManagerProp,
+    onFilterManagerChange,
+    searchPlaceholder
+  },
+  ref
+) {
   const [search, setSearch] = useState('')
   const [internalFilter, setInternalFilter] = useState('all')
   const controlled = typeof onFilterManagerChange === 'function'
@@ -27,6 +31,10 @@ export default function PackageTable({
   const [showExportMenu, setShowExportMenu] = useState(false)
   const exportRef = useRef(null)
   const lastFilteredSignatureRef = useRef('')
+
+  useImperativeHandle(ref, () => ({
+    openExportMenu: () => setShowExportMenu(true)
+  }))
 
   useEffect(() => {
     const onDocClick = (e) => {
@@ -98,9 +106,10 @@ export default function PackageTable({
     <div className="package-table-wrapper">
       <div className="table-controls">
         <input
+          id="search-input"
           className="search-input"
           type="text"
-          placeholder="Search packages…"
+          placeholder={searchPlaceholder ?? 'Search packages…'}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -218,4 +227,6 @@ export default function PackageTable({
       )}
     </div>
   )
-}
+})
+
+export default PackageTable

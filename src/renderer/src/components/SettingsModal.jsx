@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { APP_SETTINGS_DEFAULTS } from '../appSettingsDefaults'
+import ShortcutsSettingsSection from './ShortcutsSettingsSection'
 import {
   applyAccentColor,
   applyAppearanceFromSettings,
@@ -701,7 +702,7 @@ export default function SettingsModal({
               </div>
             </div>
 
-            <div className="setting-row setting-row-last">
+            <div className="setting-row">
               <div className="setting-row-text">
                 <div className="setting-label">Plugin load failure</div>
                 <div className="setting-desc">
@@ -729,6 +730,12 @@ export default function SettingsModal({
             )}
           </div>
         </section>
+
+        <ShortcutsSettingsSection
+          settings={settings}
+          persist={persist}
+          isMac={window.api?.platform === 'darwin'}
+        />
 
         <div className="settings-footer">
           {resetConfirm ? (
