@@ -73,6 +73,8 @@ export default function SettingsModal({
           ? 'settings-section-ports'
           : scrollToSection === 'environments'
             ? 'settings-section-environments'
+            : scrollToSection === 'shortcuts'
+              ? 'settings-section-shortcuts'
             : null
     if (!id) return
     requestAnimationFrame(() => {

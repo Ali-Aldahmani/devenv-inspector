@@ -66,6 +66,11 @@ const api = {
     const listener = (_event, f) => cb(f)
     ipcRenderer.on('activate-filter', listener)
     return () => ipcRenderer.removeListener('activate-filter', listener)
+  },
+  onOpenShortcutsModal: (cb) => {
+    const listener = () => cb()
+    ipcRenderer.on('open-shortcuts-modal', listener)
+    return () => ipcRenderer.removeListener('open-shortcuts-modal', listener)
   }
 }
 

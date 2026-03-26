@@ -74,6 +74,16 @@ function createWindow() {
           click: () => win.webContents.send('menu-action', { action: 'export-csv' })
         }
       ]
+    },
+    {
+      label: 'Tools',
+      submenu: [
+        {
+          label: 'Keyboard Shortcuts',
+          accelerator: process.platform === 'darwin' ? 'Cmd+/' : 'Ctrl+/',
+          click: () => win.webContents.send('open-shortcuts-modal')
+        }
+      ]
     }
   ])
   Menu.setApplicationMenu(menu)

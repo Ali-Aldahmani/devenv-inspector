@@ -63,6 +63,7 @@ export function useShortcuts(shortcuts, handlers, options = {}) {
 
       const order = [
         'closeModal',
+        'openShortcutsModal',
         'refresh',
         'focusSearch',
         'openSettings',

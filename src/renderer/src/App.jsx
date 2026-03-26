@@ -9,6 +9,7 @@ import CreateEnvironmentModal from './components/CreateEnvironmentModal'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
 import PluginsTab from './components/PluginsTab'
 import SettingsModal from './components/SettingsModal'
+import ShortcutsModal from './components/ShortcutsModal'
 import { applyThemePreference } from './theme'
 import { APP_SETTINGS_DEFAULTS } from './appSettingsDefaults'
 import { isSystemPackageName } from './systemPackages'
@@ -88,6 +89,7 @@ function AppContent() {
 
   const [showCreateEnvModal, setShowCreateEnvModal] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false)
   const [settingsScrollTarget, setSettingsScrollTarget] = useState(null)
   const [appSettings, setAppSettings] = useState(() => ({ ...APP_SETTINGS_DEFAULTS }))
   const [loading, setLoading] = useState(true)
@@ -112,6 +114,7 @@ function AppContent() {
   const packageTableRef = useRef(null)
   const envTableRef = useRef(null)
   const showSettingsRef = useRef(showSettings)
+  const showShortcutsModalRef = useRef(showShortcutsModal)
   const isMac = isMacClient()
 
   useEffect(() => {
@@ -121,6 +124,10 @@ function AppContent() {
   useEffect(() => {
     showSettingsRef.current = showSettings
   }, [showSettings])
+
+  useEffect(() => {
+    showShortcutsModalRef.current = showShortcutsModal
+  }, [showShortcutsModal])
 
   useEffect(() => {
     appSettingsRef.current = appSettings
@@ -137,9 +144,13 @@ function AppContent() {
     const unsubFilter = window.api.onActivateFilter?.((filter) => {
       if (typeof filter === 'string') setPackageFilter(filter)
     })
+    const unsubShortcutsModal = window.api.onOpenShortcutsModal?.(() => {
+      setShowShortcutsModal(true)
+    })
     return () => {
       unsubTab?.()
       unsubFilter?.()
+      unsubShortcutsModal?.()
     }
   }, [])
 
@@ -452,13 +463,23 @@ function AppContent() {
   }
 
   const closeModals = useCallback(() => {
+    if (showShortcutsModal) {
+      setShowShortcutsModal(false)
+      return
+    }
     if (showSettings) {
       setShowSettings(false)
       setSettingsScrollTarget(null)
       return
     }
     if (showCreateEnvModal) setShowCreateEnvModal(false)
-  }, [showSettings, showCreateEnvModal])
+  }, [showShortcutsModal, showSettings, showCreateEnvModal])
+
+  const toolsShortcut = isMac ? 'meta+/' : 'ctrl+/'
+  const shortcutsWithReference = useMemo(
+    () => ({ ...(appSettings.shortcuts ?? {}), openShortcutsModal: toolsShortcut }),
+    [appSettings.shortcuts, toolsShortcut]
+  )
 
   const shortcutHandlers = useMemo(
     () => ({
@@ -492,6 +513,10 @@ function AppContent() {
         if (tab === 'packages') packageTableRef.current?.openExportMenu?.()
         else if (tab === 'environments') envTableRef.current?.openExportMenu?.()
       },
+      openShortcutsModal: () => {
+        if (showSettingsRef.current) return
+        setShowShortcutsModal(true)
+      },
       closeModal: () => closeModals()
     }),
     [
@@ -503,7 +528,7 @@ function AppContent() {
     ]
   )
 
-  useShortcuts(appSettings.shortcuts ?? {}, shortcutHandlers)
+  useShortcuts(shortcutsWithReference, shortcutHandlers)
 
   const focusShortcutHint = useMemo(
     () => formatShortcutHint(appSettings.shortcuts?.focusSearch, isMac),
@@ -910,6 +935,18 @@ function AppContent() {
         onSettingsUpdated={handleSettingsUpdated}
         scrollToSection={settingsScrollTarget}
         onScrollToSectionConsumed={handleScrollToSectionConsumed}
+      />
+
+      <ShortcutsModal
+        open={showShortcutsModal}
+        shortcuts={appSettings.shortcuts ?? {}}
+        isMac={isMac}
+        onClose={() => setShowShortcutsModal(false)}
+        onOpenSettingsShortcuts={() => {
+          setShowShortcutsModal(false)
+          setSettingsScrollTarget('shortcuts')
+          setShowSettings(true)
+        }}
       />
 
       {toast && (
