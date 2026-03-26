@@ -117,6 +117,9 @@ function AppContent() {
   const envTableRef = useRef(null)
   const showSettingsRef = useRef(showSettings)
   const acceptUpgradeAllIpcRef = useRef(false)
+  const ignoreUpgradeAllOpenUntilRef = useRef(Date.now() + 6000)
+  const upgradeAllReopenLockRef = useRef(false)
+  const appMountedAtRef = useRef(Date.now())
   const isMac = isMacClient()
 
   useEffect(() => {
@@ -153,17 +156,24 @@ function AppContent() {
   }, [])
 
   useEffect(() => {
-    // Ignore stale queued IPC messages right after mount/hot-reload.
+    ignoreUpgradeAllOpenUntilRef.current = Date.now() + 6000
     const t = setTimeout(() => {
       acceptUpgradeAllIpcRef.current = true
-    }, 600)
+    }, 1500)
 
-    window.api?.onOpenUpgradeAllModal(() => {
+    const unsub = window.api?.onOpenUpgradeAllModal((payload) => {
       if (!acceptUpgradeAllIpcRef.current) return
+      if (upgradeAllReopenLockRef.current) return
+      if (Date.now() < ignoreUpgradeAllOpenUntilRef.current) return
+      const ts = Number(payload?.ts || 0)
+      // Ignore stale/ghost events that do not carry a fresh timestamp.
+      if (!ts || ts < appMountedAtRef.current) return
       setShowUpgradeAllModal(true)
     })
-
-    return () => clearTimeout(t)
+    return () => {
+      clearTimeout(t)
+      unsub?.()
+    }
   }, [])
 
   useEffect(() => {
@@ -535,6 +545,8 @@ function AppContent() {
       },
       upgradeAllPackages: () => {
         if (showSettingsRef.current) return
+        if (upgradeAllReopenLockRef.current) return
+        if (Date.now() < ignoreUpgradeAllOpenUntilRef.current) return
         setShowUpgradeAllModal(true)
       },
       closeModal: () => closeModals()
@@ -983,7 +995,14 @@ function AppContent() {
       <UpgradeAllModal
         open={showUpgradeAllModal}
         initialOutdatedPackages={initialOutdatedForUpgrade}
-        onClose={() => setShowUpgradeAllModal(false)}
+        onClose={() => {
+          upgradeAllReopenLockRef.current = true
+          ignoreUpgradeAllOpenUntilRef.current = Date.now() + 2500
+          setShowUpgradeAllModal(false)
+          setTimeout(() => {
+            upgradeAllReopenLockRef.current = false
+          }, 2500)
+        }}
         onRefreshPackages={() =>
           loadDataRef.current?.({ includeEnvironments: activeTabRef.current === 'environments' })
         }

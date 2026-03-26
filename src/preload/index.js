@@ -79,9 +79,10 @@ const api = {
     return () => ipcRenderer.removeListener('upgrade-all-progress', listener)
   },
   onOpenUpgradeAllModal: (cb) => {
-    ipcRenderer.removeAllListeners('open-upgrade-all-modal')
-    ipcRenderer.on('open-upgrade-all-modal', () => cb())
-  }
+    const listener = (_event, payload) => cb(payload)
+    ipcRenderer.on('open-upgrade-all-modal', listener)
+    return () => ipcRenderer.removeListener('open-upgrade-all-modal', listener)
+  },
 }
 
 contextBridge.exposeInMainWorld('electronAPI', api)
