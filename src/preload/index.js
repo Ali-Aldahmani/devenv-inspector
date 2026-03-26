@@ -46,6 +46,8 @@ const api = {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (s) => ipcRenderer.invoke('save-settings', s),
   resetSettings: () => ipcRenderer.invoke('reset-settings'),
+  getLatestRuntimeVersions: () => ipcRenderer.invoke('get-latest-runtime-versions'),
+  updateRuntime: (runtime) => ipcRenderer.invoke('update-runtime', runtime),
   checkForUpdates: (opts) => ipcRenderer.invoke('check-for-updates', opts ?? {}),
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
@@ -82,6 +84,11 @@ const api = {
     const listener = (_event, payload) => cb(payload)
     ipcRenderer.on('open-upgrade-all-modal', listener)
     return () => ipcRenderer.removeListener('open-upgrade-all-modal', listener)
+  },
+  onRuntimeUpdateProgress: (cb) => {
+    const listener = (_event, data) => cb(data)
+    ipcRenderer.on('runtime-update-progress', listener)
+    return () => ipcRenderer.removeListener('runtime-update-progress', listener)
   },
 }
 
