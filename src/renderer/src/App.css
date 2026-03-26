@@ -648,6 +648,90 @@ body {
   margin-bottom: 0;
 }
 
+.runtime-update-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.runtime-update-modal {
+  width: 420px;
+  background: #131417;
+  border: 1px solid #252830;
+  border-radius: 12px;
+  padding: 18px 20px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.runtime-update-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.runtime-update-title {
+  font-family: var(--heading);
+  font-size: 18px;
+  font-weight: 700;
+  color: #e8e9ec;
+}
+
+.runtime-update-close {
+  border: none;
+  background: none;
+  color: #888;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.runtime-update-versions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 10px;
+}
+
+.runtime-update-arrow {
+  color: #444;
+}
+
+.runtime-update-terminal {
+  background: #0a0b0d;
+  border: 1px solid #1e2026;
+  border-radius: 8px;
+  padding: 10px;
+  height: 160px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.runtime-update-actions,
+.runtime-update-success {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.runtime-update-manual p {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #888;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
 .settings-modal {
   width: 480px;
   max-height: 80vh;
@@ -1262,6 +1346,11 @@ body {
   border-top: 2px solid var(--border-card);
 }
 
+.runtime-card.runtime-has-update {
+  border-top-color: #f09220;
+  box-shadow: inset 0 1px 0 rgba(240, 146, 32, 0.35);
+}
+
 .runtime-python { border-top: 2px solid transparent; border-image: linear-gradient(90deg, #3776ab, #ffe873) 1; }
 .runtime-node-js { border-top: 2px solid transparent; border-image: linear-gradient(90deg, #339933, #68a063) 1; }
 .runtime-npm { border-top-color: #cc3534; }
@@ -1301,6 +1390,29 @@ body {
   font-size: 13px;
   font-weight: 500;
   color: var(--text-primary);
+}
+
+.runtime-version-wrap {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.runtime-update-pill {
+  font-family: var(--mono);
+  font-size: 10px;
+  background: #2a1e10;
+  color: #f09220;
+  border: 1px solid #4a2e10;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.runtime-update-pill:hover {
+  filter: brightness(1.1);
 }
 
 .badge-installed::before { background: #2ecc71; }

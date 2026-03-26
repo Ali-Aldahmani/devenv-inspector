@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useShortcuts } from './hooks/useShortcuts'
 import { formatShortcutHint, isMacClient } from './shortcutFormat'
 import RuntimeCard from './components/RuntimeCard'
+import RuntimeUpdateModal from './components/RuntimeUpdateModal'
 import PackageTable from './components/PackageTable'
 import PortsTable from './components/PortsTable'
 import EnvironmentsTable from './components/EnvironmentsTable'
@@ -59,6 +60,9 @@ function AppContent() {
   const [pluginCatalog, setPluginCatalog] = useState([])
   const [pluginsLoading, setPluginsLoading] = useState(false)
   const [pluginRestartRequired, setPluginRestartRequired] = useState(false)
+  const [latestRuntimeVersions, setLatestRuntimeVersions] = useState({})
+  const [runtimeUpdateModal, setRuntimeUpdateModal] = useState(null)
+  const latestRuntimeCacheRef = useRef(null)
   const loadDiagnostics = useCallback(async () => {
     setDiagLoading(true)
     try {
@@ -249,6 +253,22 @@ function AppContent() {
     }
   }, [loadEnvironments, scanFolders])
 
+  const fetchLatestRuntimeVersions = useCallback(async (force = false) => {
+    if (!force && latestRuntimeCacheRef.current) {
+      setLatestRuntimeVersions(latestRuntimeCacheRef.current)
+      return latestRuntimeCacheRef.current
+    }
+    try {
+      const data = await window.api.getLatestRuntimeVersions()
+      const next = data && typeof data === 'object' ? data : {}
+      latestRuntimeCacheRef.current = next
+      setLatestRuntimeVersions(next)
+      return next
+    } catch {
+      return latestRuntimeCacheRef.current || {}
+    }
+  }, [])
+
   const packagesForTable = useMemo(() => {
     if (appSettings.showSystemPackages) return packages
     return packages.filter((p) => !isSystemPackageName(p.name))
@@ -325,6 +345,13 @@ function AppContent() {
     }
   }, [startAutoRefresh])
 
+  useEffect(() => {
+    const t = setTimeout(() => {
+      fetchLatestRuntimeVersions(false)
+    }, 5000)
+    return () => clearTimeout(t)
+  }, [fetchLatestRuntimeVersions])
+
   useEffect(
     () => () => {
       clearAutoRefresh()
@@ -340,6 +367,35 @@ function AppContent() {
   const showExportToast = (message, type = 'success') => {
     setExportToast({ message, type })
     setTimeout(() => setExportToast(null), 3000)
+  }
+
+  const compareVersions = (installed, latest) => {
+    const parse = (v) =>
+      String(v || '')
+        .replace(/^v/i, '')
+        .split(/[.-]/)
+        .map((p) => Number.parseInt(p, 10))
+        .map((n) => (Number.isFinite(n) ? n : 0))
+    const a = parse(installed)
+    const b = parse(latest)
+    const len = Math.max(a.length, b.length)
+    for (let i = 0; i < len; i += 1) {
+      const av = a[i] ?? 0
+      const bv = b[i] ?? 0
+      if (av > bv) return 1
+      if (av < bv) return -1
+    }
+    return 0
+  }
+
+  const runtimeToUpdater = (key) => {
+    const k = String(key || '').toLowerCase()
+    if (k === 'node-js') return 'node'
+    if (k === 'npm') return 'npm'
+    if (k === 'yarn') return 'yarn'
+    if (k === 'pnpm') return 'pnpm'
+    if (k === 'conda') return 'conda'
+    return null
   }
 
   const runExportFromMenu = useCallback(async (format) => {
@@ -718,7 +774,10 @@ function AppContent() {
         </button>
         <button
           className="btn-refresh"
-          onClick={() => loadData({ includeEnvironments: activeTab === 'environments' })}
+          onClick={async () => {
+            await loadData({ includeEnvironments: activeTab === 'environments' })
+            await fetchLatestRuntimeVersions(true)
+          }}
           disabled={loading}
           title="Refresh all data"
         >
@@ -827,6 +886,24 @@ function AppContent() {
                 label={info.label}
                 info={info}
                 loading={loading}
+                hasUpdate={(() => {
+                  const updater = runtimeToUpdater(key)
+                  if (!updater || !info?.installed) return false
+                  const latest = latestRuntimeVersions?.[updater]
+                  if (!latest) return false
+                  return compareVersions(info.version, latest) < 0
+                })()}
+                latestVersion={latestRuntimeVersions?.[runtimeToUpdater(key)] || null}
+                onUpdateClick={() => {
+                  const updater = runtimeToUpdater(key)
+                  if (!updater) return
+                  setRuntimeUpdateModal({
+                    runtime: updater,
+                    label: info.label,
+                    currentVersion: info.version,
+                    latestVersion: latestRuntimeVersions?.[updater] || null
+                  })
+                }}
               />
             ))
           : // Render placeholder cards while loading
@@ -1006,6 +1083,17 @@ function AppContent() {
         onRefreshPackages={() =>
           loadDataRef.current?.({ includeEnvironments: activeTabRef.current === 'environments' })
         }
+      />
+
+      <RuntimeUpdateModal
+        open={Boolean(runtimeUpdateModal)}
+        runtime={runtimeUpdateModal?.runtime || ''}
+        label={runtimeUpdateModal?.label || ''}
+        currentVersion={runtimeUpdateModal?.currentVersion || ''}
+        latestVersion={runtimeUpdateModal?.latestVersion || ''}
+        onClose={() => setRuntimeUpdateModal(null)}
+        onRestart={() => window.electronAPI.restartApp()}
+        onRefreshLatest={() => fetchLatestRuntimeVersions(true)}
       />
 
       {toast && (
