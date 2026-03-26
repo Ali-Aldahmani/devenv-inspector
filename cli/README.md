@@ -3,7 +3,7 @@
   <p>Inspect runtimes, manage global packages, and monitor active local ports from your terminal — no GUI required.</p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-0.3.0-5a7af5?style=for-the-badge" alt="Version" />
+    <img src="https://img.shields.io/badge/version-0.6.0-5a7af5?style=for-the-badge" alt="Version" />
     <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge&logo=apple" alt="Platform" />
     <img src="https://img.shields.io/badge/license-MIT-44c98b?style=for-the-badge" alt="License" />
     <img src="https://img.shields.io/npm/v/devenv-inspector-cli?style=for-the-badge&logo=npm&color=cc3534" alt="npm" />

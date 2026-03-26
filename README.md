@@ -6,8 +6,8 @@
   <p>A unified desktop GUI for inspecting runtimes, managing global packages, monitoring active ports, and detecting virtual environments — no terminal required.</p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-0.5.0-5a7af5?style=for-the-badge" alt="Version" />
-    <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey?style=for-the-badge" alt="Platform" />
+    <img src="https://img.shields.io/badge/version-0.6.0-5a7af5?style=for-the-badge" alt="Version" />
+    <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=for-the-badge" alt="Platform" />
     <img src="https://img.shields.io/badge/license-MIT-44c98b?style=for-the-badge" alt="License" />
     <img src="https://img.shields.io/badge/open%20source-%E2%9D%A4-e05454?style=for-the-badge" alt="Open Source" />
     <a href="https://www.npmjs.com/package/devenv-inspector-cli">
@@ -38,7 +38,7 @@
 
 ## What is this?
 
-Developers who work across Python, Node.js, and Conda constantly switch between terminal commands just to see what's installed, what's running, and where their environments live. DevEnv Inspector puts it all in one window: runtime version badges, a searchable package table, one-click uninstall and upgrade, virtual environment detection, a live port viewer, and an in-app diagnostics panel.
+Developers who work across Python, Node.js, and Conda constantly switch between terminal commands just to see what's installed, what's running, and where their environments live. DevEnv Inspector puts it all in one window: runtime version badges, a searchable package table, one-click uninstall and upgrade, virtual environment detection, a live port viewer, a full settings panel, and an in-app diagnostics panel.
 
 <div align="center">
   <img src="media/screenshot.png" alt="DevEnv Inspector Screenshot" width="780" />
@@ -51,7 +51,7 @@ Developers who work across Python, Node.js, and Conda constantly switch between 
 - **Runtime detection** — instantly shows installed versions of Python, Conda, Node.js, npm, Yarn, pnpm, nvm, and pyenv
 - **Unified package table** — all pip, conda, npm, yarn, and pnpm global packages in one searchable list
 - **Package update detection** — outdated packages shown with amber upgrade badges, one-click upgrade with confirmation
-- **Safe uninstallation** — confirmation dialog before any package is removed
+- **Safe uninstallation** — confirmation dialog before any package is removed (configurable)
 - **Filter by manager** — dynamically shows only the managers installed on your machine
 - **Environments tab** — scans your machine for Python venv, Conda, Node, Poetry, and Pipenv environments
 - **Custom scan folders** — add any directory to the environment scanner, saved across sessions
@@ -59,9 +59,11 @@ Developers who work across Python, Node.js, and Conda constantly switch between 
 - **Export to JSON / CSV** — export packages or environments with current filters applied
 - **Active Ports tab** — see every TCP/UDP port in use: port number, protocol, PID, and process name
 - **Kill process** — terminate any port's process with a single click and a confirmation dialog
-- **Dark / light mode** — one-click toggle, preference saved across sessions
+- **Plugin system** — install community plugins (Java, Rust, Go, Ruby, Flutter, .NET, and more) or create your own with a guided form
+- **Settings panel** — theme (dark/light/system), accent color, font size, compact mode, auto-refresh, scan depth, notifications, and auto-update
+- **Auto-update** — in-app update banner with one-click install
+- **Dark / light / system mode** — follows your OS automatically
 - **Diagnostics tab** — structured in-app logs from all key operations, copyable for bug reports
-- **Plugin system** — add support for new package managers in a single file, zero changes to core code
 - **No internet required** — everything runs locally against your machine
 
 ---
@@ -70,9 +72,11 @@ Developers who work across Python, Node.js, and Conda constantly switch between 
 
 | Platform | Installer |
 |---|---|
-| 🍎 macOS (Apple Silicon) | [DevEnv-Inspector-0.5.0-arm64.dmg](https://github.com/ali-aldahmani/devenv-inspector/releases/latest) |
-| 🍎 macOS (Intel) | [DevEnv-Inspector-0.5.0.dmg](https://github.com/ali-aldahmani/devenv-inspector/releases/latest) |
-| 🪟 Windows (x64) | [DevEnv-Inspector-Setup-0.5.0.exe](https://github.com/ali-aldahmani/devenv-inspector/releases/latest) |
+| 🍎 macOS (Apple Silicon) | [DevEnv-Inspector-0.6.0-arm64.dmg](https://github.com/ali-aldahmani/devenv-inspector/releases/latest) |
+| 🍎 macOS (Intel) | [DevEnv-Inspector-0.6.0.dmg](https://github.com/ali-aldahmani/devenv-inspector/releases/latest) |
+| 🪟 Windows (x64) | [DevEnv-Inspector-Setup-0.6.0.exe](https://github.com/ali-aldahmani/devenv-inspector/releases/latest) |
+| 🐧 Linux (x64) | [DevEnv-Inspector-0.6.0.AppImage](https://github.com/ali-aldahmani/devenv-inspector/releases/latest) |
+| 🐧 Linux (Debian/Ubuntu) | [DevEnv-Inspector-0.6.0.deb](https://github.com/ali-aldahmani/devenv-inspector/releases/latest) |
 
 ---
 
@@ -149,9 +153,11 @@ npm run package
 ```
 
 Produces installers in `dist/`:
-- `DevEnv-Inspector-0.5.0-arm64.dmg` — macOS Apple Silicon
-- `DevEnv-Inspector-0.5.0.dmg` — macOS Intel
-- `DevEnv-Inspector-Setup-0.5.0.exe` — Windows x64
+- `DevEnv-Inspector-0.6.0-arm64.dmg` — macOS Apple Silicon
+- `DevEnv-Inspector-0.6.0.dmg` — macOS Intel
+- `DevEnv-Inspector-Setup-0.6.0.exe` — Windows x64
+- `DevEnv-Inspector-0.6.0.AppImage` — Linux x64
+- `DevEnv-Inspector-0.6.0.deb` — Debian/Ubuntu
 
 ---
 
@@ -160,7 +166,7 @@ Produces installers in `dist/`:
 ┌─────────────────────────────────────────────────────────────┐
 │                      Renderer Process                       │
 │  React UI — runtime cards, Packages, Environments,         │
-│             Active Ports, Diagnostics tabs                  │
+│             Active Ports, Plugins, Diagnostics tabs         │
 │  Tabs derived dynamically from registry metadata            │
 └──────────────────────┬──────────────────────────────────────┘
                        │  IPC (contextBridge)
@@ -174,17 +180,22 @@ Produces installers in `dist/`:
 │  envDetector.js        →  scan dirs → virtual envs          │
 │  envCreator.js         →  create venv/conda/node/poetry     │
 │  exporter.js           →  JSON / CSV export                 │
+│  pluginManager.js      →  load/save/toggle user plugins     │
+│  pluginCatalog.js      →  10 language + 9 framework entries │
+│  settingsStore.js      →  persist all user preferences      │
+│  updater.js            →  electron-updater auto-update      │
+│  notifier.js           →  OS notifications                  │
 │  diagnostics.js        →  structured in-app log store       │
 │  ipcHandlers.js        →  all IPC channel routing           │
 │  shell.js              →  login shell executor              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-Every command runs through the user's login shell (`zsh -i -l -c` on macOS, `cmd.exe /c` on Windows) so that conda, pyenv, nvm, and other shell-managed tools are always found — both in dev mode and in the packaged app.
+Every command runs through the user's login shell (`zsh -i -l -c` on macOS/Linux, `cmd.exe /c` on Windows) so that conda, pyenv, nvm, and other shell-managed tools are always found — both in dev mode and in the packaged app.
 
 ---
 
-## Supported Runtimes (v0.5.0)
+## Supported Runtimes (v0.6.0)
 
 | Runtime | Detect | Packages | Uninstall | Outdated |
 |---|---|---|---|---|
@@ -218,11 +229,13 @@ The **Active Ports** tab gives you an instant overview of every listening port o
 
 ## Environments Tab
 
-Automatically scans your machine for virtual environments two levels deep across common directories (`~/Documents`, `~/Desktop`, `~/Projects`, `~/dev`, and Windows equivalents).
+Automatically scans your machine for virtual environments across common directories (`~/Documents`, `~/Desktop`, `~/Projects`, `~/dev`, and Windows/Linux equivalents).
 
 **Detected types:** Python venv · Conda · Node modules · Poetry · Pipenv
 
-- **Custom scan folders** — add any directory via native folder picker, saved across sessions
+- **Scan depth** — configurable 1, 2, or 3 levels deep via Settings
+- **Excluded folders** — blacklist folders to never scan via Settings
+- **Custom scan folders** — add any directory via native folder picker
 - **Create Environment** — 3-step modal: choose type → pick packages → live install output
 - **Open** button launches the project folder in your file explorer
 - **Export** to JSON or CSV with current filters applied
@@ -231,9 +244,17 @@ Automatically scans your machine for virtual environments two levels deep across
 
 ## Plugin System
 
-Each runtime is a self-describing plugin registered via `registerRuntime()`. The core detectors, parsers, IPC handlers, and renderer UI are all driven by the registry — zero hardcoded manager names.
+Each runtime is a self-describing plugin registered via `registerRuntime()`. Install community plugins from the catalog or create your own with the guided form — no coding required.
 
-### Adding a community runtime (e.g. Bun)
+### Community Catalog
+
+| Category | Plugins |
+|---|---|
+| Language | Java · Kotlin · Rust · Go · Ruby · Deno · Swift · Bun |
+| Framework | Django · FastAPI · Laravel · Next.js · NestJS · Vue CLI · Angular CLI · Flutter · Electron |
+| Tools | PHP Composer · .NET |
+
+### Adding a custom runtime
 
 Create one file — `src/main/runtimes/bun.js`:
 ```js
@@ -257,8 +278,6 @@ Then add **one import line** in `src/main/index.js`:
 import './runtimes/bun.js'
 ```
 
-The runtime card, filter tab, package listing, upgrade badge, and uninstall button all appear automatically — **zero changes to core code**.
-
 ### Plugin shape reference
 
 | Field | Type | Description |
@@ -274,6 +293,22 @@ The runtime card, filter tab, package listing, upgrade badge, and uninstall butt
 
 ---
 
+## Settings
+
+Access via the ⚙ gear icon in the titlebar. All settings save instantly.
+
+| Section | Settings |
+|---|---|
+| **Appearance** | Theme (Dark/Light/System), Accent color, Font size, Compact mode |
+| **Refresh** | Refresh on startup, Auto-refresh, Refresh interval (30s/1min/5min) |
+| **Packages** | Show system packages, Confirm before uninstall, Confirm before upgrade |
+| **Ports** | Confirm before killing a process |
+| **Environments** | Scan depth (1/2/3 levels), Excluded folders |
+| **Updates** | Check on launch, Auto-download, Update channel (Stable/Beta) |
+| **Notifications** | New port opened, Package updates available, Plugin load failure |
+
+---
+
 ## Roadmap
 
 ### Shipped
@@ -282,23 +317,28 @@ The runtime card, filter tab, package listing, upgrade badge, and uninstall butt
 - [x] One-click uninstall with confirmation
 - [x] CLI companion (`devenv-inspector-cli` on npm)
 - [x] Docker support for the CLI
-- [x] Plugin system — add any runtime in a single file
+- [x] Plugin system — install from catalog or create with guided form
 - [x] Active Local Ports — live TCP/UDP port viewer with kill support
-- [x] Full UI redesign — dark terminal aesthetic with dark/light mode toggle
+- [x] Full UI redesign — dark terminal aesthetic
 - [x] Package update detection with one-click upgrade
 - [x] nvm / pyenv version manager support
-- [x] Virtual environment detection (Environments tab)
-- [x] Create environment modal with live package installer
-- [x] Custom scan folders for environment detection
+- [x] Virtual environment detection + creation
+- [x] Custom scan folders + scan depth + excluded folders
 - [x] Export packages and environments to JSON / CSV
 - [x] Diagnostics tab with copyable structured logs
+- [x] Full Settings panel (theme, accent, font, refresh, notifications, updates)
+- [x] Auto-update via electron-updater
 - [x] Windows support
+- [x] Linux support (AppImage + deb)
 
 ### Upcoming
-- [ ] Linux support
+- [ ] App icon
+- [ ] Keyboard shortcuts
+- [ ] Framework detection in Environments (React, Next.js, Vue, etc.)
+- [ ] Package details panel
+- [ ] Global search (Ctrl+K)
+- [ ] Docker container integration
 - [ ] Dependency graph visualization
-- [ ] Auto-update via `electron-updater`
-- [ ] Docker container port integration
 
 ---
 
