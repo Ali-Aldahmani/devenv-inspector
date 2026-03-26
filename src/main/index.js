@@ -2,6 +2,7 @@ import './runtimes/builtins.js'
 import './runtimes/nvm.js'
 import './runtimes/pyenv.js'
 import { app, BrowserWindow, Menu } from 'electron'
+import { existsSync } from 'fs'
 import { join } from 'path'
 import { registerIpcHandlers } from './ipcHandlers.js'
 import { loadUserPlugins } from './pluginManager.js'
@@ -9,13 +10,31 @@ import { getSettingsSync } from './settingsStore.js'
 import { initNotifier, notifyPluginFailure } from './notifier.js'
 import { initUpdater, checkForUpdates } from './updater.js'
 
+/** Title bar / taskbar icon (electron-builder `build.*.icon` only sets installer / .exe branding). */
+function getWindowIconPath() {
+  const file =
+    process.platform === 'win32' ? 'icon.ico' : process.platform === 'darwin' ? 'icon.icns' : 'icon.png'
+  const candidates = [
+    join(app.getAppPath(), 'build', file),
+    join(__dirname, '..', '..', 'build', file),
+    join(process.cwd(), 'build', file)
+  ]
+  for (const p of candidates) {
+    if (existsSync(p)) return p
+  }
+  return undefined
+}
+
 function createWindow() {
+  const iconPath = getWindowIconPath()
+
   const win = new BrowserWindow({
     width: 1100,
     height: 750,
     minWidth: 900,
     minHeight: 600,
     title: 'DevEnv Inspector',
+    ...(iconPath ? { icon: iconPath } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -62,6 +81,11 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  if (process.platform === 'darwin' && app.dock) {
+    const dockIcon = getWindowIconPath()
+    if (dockIcon) app.dock.setIcon(dockIcon)
+  }
+
   const pluginLoadResult = await loadUserPlugins()
   registerIpcHandlers()
   const mainWindow = createWindow()

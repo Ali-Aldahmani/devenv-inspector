@@ -34,7 +34,10 @@
     },
     "files": [
       "out/**/*",
-      "package.json"
+      "package.json",
+      "build/icon.ico",
+      "build/icon.icns",
+      "build/icon.png"
     ],
     "linux": {
       "target": [
