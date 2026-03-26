@@ -696,7 +696,7 @@ function AppContent() {
     <div className="app">
       <header className="app-header">
         <h1 className="app-title">DevEnv Inspector</h1>
-        <span className="app-version">v0.6.0</span>
+        <span className="app-version">v0.7.0</span>
         <button
           type="button"
           className="btn-settings-open"
@@ -1021,3 +1021,4 @@ function AppContent() {
     </div>
   )
 }
+
