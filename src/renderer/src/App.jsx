@@ -116,6 +116,7 @@ function AppContent() {
   const packageTableRef = useRef(null)
   const envTableRef = useRef(null)
   const showSettingsRef = useRef(showSettings)
+  const acceptUpgradeAllIpcRef = useRef(false)
   const isMac = isMacClient()
 
   useEffect(() => {
@@ -152,9 +153,17 @@ function AppContent() {
   }, [])
 
   useEffect(() => {
+    // Ignore stale queued IPC messages right after mount/hot-reload.
+    const t = setTimeout(() => {
+      acceptUpgradeAllIpcRef.current = true
+    }, 600)
+
     window.api?.onOpenUpgradeAllModal(() => {
+      if (!acceptUpgradeAllIpcRef.current) return
       setShowUpgradeAllModal(true)
     })
+
+    return () => clearTimeout(t)
   }, [])
 
   useEffect(() => {

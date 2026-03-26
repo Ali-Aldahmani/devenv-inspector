@@ -191,19 +191,53 @@ export default function UpgradeAllModal({
   return (
     <div
       className="upgrade-all-overlay"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'rgba(0,0,0,0.75)',
+        zIndex: 99999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        pointerEvents: 'all'
+      }}
       onClick={(e) => {
         if (e.target !== e.currentTarget) return
         if (!canClose) return
         onClose()
       }}
     >
-      <div className="upgrade-all-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="upgrade-all-modal"
+        style={{
+          background: '#131417',
+          border: '1px solid #252830',
+          borderRadius: '12px',
+          width: '520px',
+          maxHeight: '70vh',
+          overflowY: 'auto',
+          padding: '24px',
+          position: 'relative',
+          zIndex: 100000,
+          pointerEvents: 'all'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="upgrade-all-header">
           <h2 className="upgrade-all-title">
             {phase === 'upgrading' ? 'Upgrading Packages...' : phase === 'done' ? 'Upgrade Complete' : 'Upgrade All Packages'}
           </h2>
           {phase === 'upgrading' ? <span className="upgrade-all-spinner">◌</span> : allowCloseDone || phase === 'review' ? (
-            <button type="button" className="upgrade-all-close" onClick={() => onClose()} aria-label="Close">
+            <button
+              type="button"
+              className="upgrade-all-close"
+              style={{ position: 'relative', zIndex: 100001, pointerEvents: 'all', cursor: 'pointer' }}
+              onClick={() => onClose()}
+              aria-label="Close"
+            >
               ×
             </button>
           ) : null}
@@ -246,12 +280,18 @@ export default function UpgradeAllModal({
                 {selectedKeys.size === rows.length ? 'Deselect All' : 'Select All'}
               </button>
               <div className="upgrade-all-footer-actions">
-                <button type="button" className="btn-cancel" onClick={() => onClose()}>
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  style={{ position: 'relative', zIndex: 100001, pointerEvents: 'all', cursor: 'pointer' }}
+                  onClick={() => onClose()}
+                >
                   Cancel
                 </button>
                 <button
                   type="button"
                   className="upgrade-all-primary"
+                  style={{ position: 'relative', zIndex: 100001, pointerEvents: 'all', cursor: 'pointer' }}
                   disabled={selectableCount === 0}
                   onClick={runUpgrade}
                 >
@@ -339,12 +379,18 @@ export default function UpgradeAllModal({
             <div className="upgrade-all-footer">
               <span />
               <div className="upgrade-all-footer-actions">
-                <button type="button" className="btn-cancel" onClick={onClose}>
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  style={{ position: 'relative', zIndex: 100001, pointerEvents: 'all', cursor: 'pointer' }}
+                  onClick={onClose}
+                >
                   Close
                 </button>
                 <button
                   type="button"
                   className="upgrade-all-primary"
+                  style={{ position: 'relative', zIndex: 100001, pointerEvents: 'all', cursor: 'pointer' }}
                   onClick={() => {
                     onClose()
                     onRefreshPackages?.()
