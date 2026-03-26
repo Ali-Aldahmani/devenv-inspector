@@ -188,6 +188,8 @@ export default function UpgradeAllModal({
     }
   }
 
+  if (!open) return null
+
   return (
     <div
       className="upgrade-all-overlay"

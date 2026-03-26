@@ -87,7 +87,7 @@ function createWindow() {
         {
           label: 'Upgrade All Packages',
           accelerator: process.platform === 'darwin' ? 'Cmd+Shift+U' : 'Ctrl+Shift+U',
-          click: () => win.webContents.send('open-upgrade-all-modal')
+          click: () => win.webContents.send('open-upgrade-all-modal', { ts: Date.now() })
         }
       ]
     }
