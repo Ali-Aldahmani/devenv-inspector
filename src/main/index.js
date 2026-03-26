@@ -5,6 +5,9 @@ import { app, BrowserWindow, Menu } from 'electron'
 import { join } from 'path'
 import { registerIpcHandlers } from './ipcHandlers.js'
 import { loadUserPlugins } from './pluginManager.js'
+import { getSettingsSync } from './settingsStore.js'
+import { initNotifier, notifyPluginFailure } from './notifier.js'
+import { initUpdater, checkForUpdates } from './updater.js'
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -55,15 +58,34 @@ function createWindow() {
     }
   ])
   Menu.setApplicationMenu(menu)
+  return win
 }
 
 app.whenReady().then(async () => {
-  await loadUserPlugins()
+  const pluginLoadResult = await loadUserPlugins()
   registerIpcHandlers()
-  createWindow()
+  const mainWindow = createWindow()
+  initNotifier(mainWindow)
+  if (pluginLoadResult?.failed?.length) {
+    for (const f of pluginLoadResult.failed) {
+      notifyPluginFailure(f.name, f.error)
+    }
+  }
+  initUpdater(mainWindow)
+
+  const settings = getSettingsSync()
+  if (settings.checkUpdatesOnLaunch && app.isPackaged) {
+    setTimeout(() => {
+      checkForUpdates(false)
+    }, 3000)
+  }
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) {
+      const w = createWindow()
+      initNotifier(w)
+      initUpdater(w)
+    }
   })
 })
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import RuntimeCard from './components/RuntimeCard'
 import PackageTable from './components/PackageTable'
 import PortsTable from './components/PortsTable'
@@ -6,6 +6,11 @@ import EnvironmentsTable from './components/EnvironmentsTable'
 import CreateEnvironmentModal from './components/CreateEnvironmentModal'
 import DiagnosticsPanel from './components/DiagnosticsPanel'
 import PluginsTab from './components/PluginsTab'
+import SettingsModal from './components/SettingsModal'
+import { applyThemePreference } from './theme'
+import { APP_SETTINGS_DEFAULTS } from './appSettingsDefaults'
+import { isSystemPackageName } from './systemPackages'
+import { applyAppearanceFromSettings } from './appearance'
 
 function mergePackagesWithOutdated(packages, outdatedRows) {
   const byKey = new Map(
@@ -28,6 +33,14 @@ function mergePackagesWithOutdated(packages, outdatedRows) {
 }
 
 export default function App() {
+  if (!window.api) {
+    console.error('Preload API not available')
+    return null
+  }
+  return <AppContent />
+}
+
+function AppContent() {
   const [runtimes, setRuntimes] = useState(null)
   const [packages, setPackages] = useState([])
   const [visiblePackages, setVisiblePackages] = useState([])
@@ -72,13 +85,80 @@ export default function App() {
   }, [])
 
   const [showCreateEnvModal, setShowCreateEnvModal] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const [settingsScrollTarget, setSettingsScrollTarget] = useState(null)
+  const [appSettings, setAppSettings] = useState(() => ({ ...APP_SETTINGS_DEFAULTS }))
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [exportToast, setExportToast] = useState(null)
+  const [updateBanner, setUpdateBanner] = useState(null)
   const [activeTab, setActiveTab] = useState('packages')
-  const [theme, setTheme] = useState(
-    () => (document.documentElement.classList.contains('light-mode') ? 'light' : 'dark')
+  const [packageFilter, setPackageFilter] = useState('all')
+  const [themePreference, setThemePreference] = useState(() => {
+    const raw = localStorage.getItem('devenv-theme') ?? 'system'
+    return ['dark', 'light', 'system'].includes(raw) ? raw : 'system'
+  })
+  const [systemDark, setSystemDark] = useState(() =>
+    window.matchMedia('(prefers-color-scheme: dark)').matches
   )
+  const activeTabRef = useRef(activeTab)
+  const loadDataRef = useRef(null)
+  const autoRefreshTimerRef = useRef(null)
+  const appSettingsRef = useRef(appSettings)
+  const scanFoldersRef = useRef(scanFolders)
+  const envRescanPendingRef = useRef(false)
+
+  useEffect(() => {
+    activeTabRef.current = activeTab
+  }, [activeTab])
+
+  useEffect(() => {
+    appSettingsRef.current = appSettings
+  }, [appSettings])
+
+  useEffect(() => {
+    scanFoldersRef.current = scanFolders
+  }, [scanFolders])
+
+  useEffect(() => {
+    const unsubTab = window.api.onSwitchTab?.((tab) => {
+      if (typeof tab === 'string') setActiveTab(tab)
+    })
+    const unsubFilter = window.api.onActivateFilter?.((filter) => {
+      if (typeof filter === 'string') setPackageFilter(filter)
+    })
+    return () => {
+      unsubTab?.()
+      unsubFilter?.()
+    }
+  }, [])
+
+  useEffect(() => {
+    const unsub = window.api.onUpdateStatus((data) => {
+      if (data.status === 'checking') {
+        setUpdateBanner(null)
+        return
+      }
+      if (data.status === 'up-to-date' && data.manual) {
+        setExportToast({ message: "✓ You're on the latest version", type: 'success' })
+        setTimeout(() => setExportToast(null), 3000)
+        setUpdateBanner(null)
+        return
+      }
+      if (data.status === 'up-to-date') {
+        setUpdateBanner(null)
+        return
+      }
+      setUpdateBanner(data)
+    })
+    return unsub
+  }, [])
+
+  useEffect(() => {
+    if (updateBanner?.status !== 'error') return
+    const t = setTimeout(() => setUpdateBanner(null), 8000)
+    return () => clearTimeout(t)
+  }, [updateBanner?.status])
 
   const loadEnvironments = useCallback(async (customFolders = scanFolders) => {
     setEnvLoading(true)
@@ -126,9 +206,88 @@ export default function App() {
     }
   }, [loadEnvironments, scanFolders])
 
+  const packagesForTable = useMemo(() => {
+    if (appSettings.showSystemPackages) return packages
+    return packages.filter((p) => !isSystemPackageName(p.name))
+  }, [packages, appSettings.showSystemPackages])
+
+  const clearAutoRefresh = useCallback(() => {
+    if (autoRefreshTimerRef.current != null) {
+      clearInterval(autoRefreshTimerRef.current)
+      autoRefreshTimerRef.current = null
+    }
+  }, [])
+
+  const startAutoRefresh = useCallback(
+    (intervalSeconds) => {
+      clearAutoRefresh()
+      autoRefreshTimerRef.current = setInterval(() => {
+        loadDataRef.current?.({
+          includeEnvironments: activeTabRef.current === 'environments'
+        })
+      }, intervalSeconds * 1000)
+    },
+    [clearAutoRefresh]
+  )
+
   useEffect(() => {
-    loadData()
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = () => {
+      setSystemDark(mq.matches)
+      if (themePreference === 'system') {
+        applyThemePreference('system')
+      }
+    }
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [themePreference])
+
+  useEffect(() => {
+    applyThemePreference(themePreference)
+  }, [themePreference])
+
+  useEffect(() => {
+    loadDataRef.current = loadData
   }, [loadData])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      let s = null
+      try {
+        s = await window.electronAPI.getSettings()
+      } catch {
+        s = null
+      }
+      if (cancelled) return
+      if (s) {
+        setAppSettings({ ...APP_SETTINGS_DEFAULTS, ...s })
+        applyAppearanceFromSettings(s)
+      }
+      if (s?.theme) {
+        setThemePreference(s.theme)
+      }
+      const shouldRefreshStartup = s?.refreshOnStartup !== false
+      if (shouldRefreshStartup) {
+        await loadData({ includeEnvironments: false })
+      } else {
+        setLoading(false)
+      }
+      if (s?.autoRefresh) {
+        startAutoRefresh(s.autoRefreshInterval ?? 60)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [startAutoRefresh])
+
+  useEffect(
+    () => () => {
+      clearAutoRefresh()
+    },
+    [clearAutoRefresh]
+  )
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
@@ -211,12 +370,50 @@ export default function App() {
     }
   }
 
+  const effectiveLight =
+    themePreference === 'light' || (themePreference === 'system' && !systemDark)
+
   const handleThemeToggle = () => {
-    const nextTheme = theme === 'light' ? 'dark' : 'light'
-    setTheme(nextTheme)
-    document.documentElement.classList.toggle('light-mode', nextTheme === 'light')
-    localStorage.setItem('devenv-theme', nextTheme)
+    const nextTheme = effectiveLight ? 'dark' : 'light'
+    setThemePreference(nextTheme)
+    applyThemePreference(nextTheme)
+    window.electronAPI
+      .saveSettings({ theme: nextTheme })
+      .then((full) => {
+        if (full) setAppSettings({ ...APP_SETTINGS_DEFAULTS, ...full })
+      })
+      .catch(() => {})
   }
+
+  const handleSettingsUpdated = (s) => {
+    const prev = appSettingsRef.current
+    const sortedFolders = (a) => JSON.stringify([...(a ?? [])].sort())
+    const hadEnvChange =
+      s.scanDepth !== prev.scanDepth || sortedFolders(s.excludedFolders) !== sortedFolders(prev.excludedFolders)
+
+    setAppSettings({ ...APP_SETTINGS_DEFAULTS, ...s })
+    applyAppearanceFromSettings(s)
+    setThemePreference(s.theme)
+    applyThemePreference(s.theme)
+    clearAutoRefresh()
+    if (s.autoRefresh) {
+      startAutoRefresh(s.autoRefreshInterval ?? 60)
+    }
+
+    if (hadEnvChange) {
+      showToast('Settings saved — environments will re-scan', 'success')
+      if (activeTabRef.current === 'environments') {
+        envRescanPendingRef.current = false
+        loadEnvironments(scanFoldersRef.current)
+      } else {
+        envRescanPendingRef.current = true
+      }
+    }
+  }
+
+  const handleScrollToSectionConsumed = useCallback(() => {
+    setSettingsScrollTarget(null)
+  }, [])
 
   const handleOpenPath = async (targetPath) => {
     const result = await window.electronAPI.openPath(targetPath)
@@ -230,6 +427,7 @@ export default function App() {
     ;(async () => {
       const folders = await loadScanFolders()
       await loadEnvironments(folders)
+      envRescanPendingRef.current = false
     })()
   }
 
@@ -315,17 +513,31 @@ export default function App() {
     await loadEnvironments(next)
   }
 
+  const releasesUrl = 'https://github.com/Ali-Aldahmani/devenv-inspector/releases'
+
   return (
     <div className="app">
       <header className="app-header">
         <h1 className="app-title">DevEnv Inspector</h1>
-        <span className="app-version">v0.5.0</span>
+        <span className="app-version">v0.6.0</span>
         <button
+          type="button"
+          className="btn-settings-open"
+          onClick={() => {
+            setSettingsScrollTarget(null)
+            setShowSettings(true)
+          }}
+          title="Settings"
+        >
+          ⚙
+        </button>
+        <button
+          type="button"
           className="btn-theme-toggle"
           onClick={handleThemeToggle}
-          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          title={effectiveLight ? 'Switch to dark mode' : 'Switch to light mode'}
         >
-          {theme === 'light' ? '🌙' : '☀️'}
+          {effectiveLight ? '🌙' : '☀️'}
         </button>
         <button
           className="btn-refresh"
@@ -336,6 +548,98 @@ export default function App() {
           {loading ? 'Loading…' : 'Refresh'}
         </button>
       </header>
+
+      {updateBanner?.status === 'available' && (
+        <div className="update-banner update-banner-available">
+          <div className="update-banner-inner">
+            <span className="update-banner-title">
+              ✦ DevEnv Inspector v{updateBanner.version} is available
+            </span>
+            <div className="update-banner-actions">
+              <button
+                type="button"
+                className="update-banner-btn-primary"
+                onClick={() => window.api.downloadUpdate()}
+              >
+                Download
+              </button>
+              <button
+                type="button"
+                className="update-banner-link"
+                onClick={() => window.api.openExternalUrl(releasesUrl)}
+              >
+                View release notes
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="update-banner-dismiss"
+            onClick={() => setUpdateBanner(null)}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {updateBanner?.status === 'downloading' && (
+        <div className="update-banner update-banner-downloading">
+          <div className="update-banner-inner update-banner-inner-full">
+            <div className="update-banner-downloading-text">
+              Downloading update... {updateBanner.percent ?? 0}%
+            </div>
+            <div className="update-banner-progress-track">
+              <div
+                className="update-banner-progress-fill"
+                style={{ width: `${Math.min(100, Math.max(0, updateBanner.percent ?? 0))}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {updateBanner?.status === 'downloaded' && (
+        <div className="update-banner update-banner-downloaded">
+          <div className="update-banner-inner">
+            <span className="update-banner-title-downloaded">
+              ✦ Update ready — v{updateBanner.version} downloaded
+            </span>
+            <div className="update-banner-actions">
+              <button
+                type="button"
+                className="update-banner-btn-install"
+                onClick={() => window.api.installUpdate()}
+              >
+                Restart & Install
+              </button>
+              <button
+                type="button"
+                className="update-banner-btn-later"
+                onClick={() => setUpdateBanner(null)}
+              >
+                Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {updateBanner?.status === 'error' && (
+        <div className="update-banner update-banner-error">
+          <span className="update-banner-error-text">
+            Update check failed: {updateBanner.message || 'Unknown error'}
+          </span>
+          <button
+            type="button"
+            className="update-banner-dismiss"
+            onClick={() => setUpdateBanner(null)}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       <section className="runtimes-row">
         {runtimes
@@ -395,13 +699,22 @@ export default function App() {
       {activeTab === 'packages' && (
         <section className="packages-section">
           <PackageTable
-            packages={packages}
+            packages={packagesForTable}
             loading={loading}
             runtimes={runtimes}
             onUninstall={handleUninstall}
             onUpgrade={handleUpgrade}
             onExportToast={showExportToast}
             onFilteredChange={setVisiblePackages}
+            filterManager={packageFilter}
+            onFilterManagerChange={setPackageFilter}
+            showSystemPackages={appSettings.showSystemPackages}
+            onOpenPackagesSettings={() => {
+              setSettingsScrollTarget('packages')
+              setShowSettings(true)
+            }}
+            confirmBeforeUninstall={appSettings.confirmBeforeUninstall}
+            confirmBeforeUpgrade={appSettings.confirmBeforeUpgrade}
           />
         </section>
       )}
@@ -412,6 +725,7 @@ export default function App() {
             ports={ports}
             loading={loading}
             onKill={handleKillPort}
+            confirmBeforeKillPort={appSettings.confirmBeforeKillPort}
           />
         </section>
       )}
@@ -465,6 +779,17 @@ export default function App() {
           onSuccess={handleCreateEnvSuccess}
         />
       )}
+
+      <SettingsModal
+        open={showSettings}
+        onClose={() => {
+          setShowSettings(false)
+          setSettingsScrollTarget(null)
+        }}
+        onSettingsUpdated={handleSettingsUpdated}
+        scrollToSection={settingsScrollTarget}
+        onScrollToSectionConsumed={handleScrollToSectionConsumed}
+      />
 
       {toast && (
         <div className={`toast toast-${toast.type}`}>

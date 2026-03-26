@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import KillDialog from './KillDialog'
 
-export default function PortsTable({ ports, loading, onKill }) {
+export default function PortsTable({ ports, loading, onKill, confirmBeforeKillPort }) {
   const [search, setSearch] = useState('')
   const [filterProtocol, setFilterProtocol] = useState('all')
   const [pendingPort, setPendingPort] = useState(null)
@@ -16,14 +16,24 @@ export default function PortsTable({ ports, loading, onKill }) {
     return matchesSearch && matchesProtocol
   })
 
-  const handleKillClick = (port) => setPendingPort(port)
+  const runKill = async (p) => {
+    setKilling(p.pid)
+    await onKill(p.pid)
+    setKilling(null)
+  }
+
+  const handleKillClick = (port) => {
+    if (!confirmBeforeKillPort) {
+      void runKill(port)
+      return
+    }
+    setPendingPort(port)
+  }
 
   const handleConfirm = async () => {
     const p = pendingPort
     setPendingPort(null)
-    setKilling(p.pid)
-    await onKill(p.pid)
-    setKilling(null)
+    await runKill(p)
   }
 
   return (
@@ -47,9 +57,11 @@ export default function PortsTable({ ports, loading, onKill }) {
             </button>
           ))}
         </div>
-        <span className="package-count">
-          {filtered.length} port{filtered.length !== 1 ? 's' : ''}
-        </span>
+        <div className="package-count-group">
+          <span className="package-count">
+            {filtered.length} port{filtered.length !== 1 ? 's' : ''}
+          </span>
+        </div>
       </div>
 
       {loading ? (

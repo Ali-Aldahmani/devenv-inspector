@@ -1,0 +1,118 @@
+import { app } from 'electron'
+import path from 'path'
+import { readFile, writeFile } from 'fs/promises'
+import { readFileSync as readFileSyncFs, existsSync } from 'fs'
+
+const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json')
+
+const DEFAULTS = {
+  theme: 'system',
+  autoRefresh: false,
+  autoRefreshInterval: 60,
+  refreshOnStartup: true,
+  showSystemPackages: false,
+  confirmBeforeUninstall: true,
+  confirmBeforeUpgrade: true,
+  confirmBeforeKillPort: true,
+  scanDepth: 2,
+  excludedFolders: [],
+  checkUpdatesOnLaunch: true,
+  autoDownloadUpdates: false,
+  updateChannel: 'stable',
+  accentColor: '#4a9eda',
+  fontSize: 'medium',
+  compactMode: false,
+  notifyNewPort: false,
+  notifyPackageUpdates: true,
+  notifyPluginFailure: true
+}
+
+function mergeWithDefaults(raw) {
+  return {
+    theme: ['dark', 'light', 'system'].includes(raw?.theme) ? raw.theme : DEFAULTS.theme,
+    autoRefresh: typeof raw?.autoRefresh === 'boolean' ? raw.autoRefresh : DEFAULTS.autoRefresh,
+    autoRefreshInterval: [30, 60, 300].includes(raw?.autoRefreshInterval)
+      ? raw.autoRefreshInterval
+      : DEFAULTS.autoRefreshInterval,
+    refreshOnStartup:
+      typeof raw?.refreshOnStartup === 'boolean' ? raw.refreshOnStartup : DEFAULTS.refreshOnStartup,
+    showSystemPackages:
+      typeof raw?.showSystemPackages === 'boolean' ? raw.showSystemPackages : DEFAULTS.showSystemPackages,
+    confirmBeforeUninstall:
+      typeof raw?.confirmBeforeUninstall === 'boolean'
+        ? raw.confirmBeforeUninstall
+        : DEFAULTS.confirmBeforeUninstall,
+    confirmBeforeUpgrade:
+      typeof raw?.confirmBeforeUpgrade === 'boolean'
+        ? raw.confirmBeforeUpgrade
+        : DEFAULTS.confirmBeforeUpgrade,
+    confirmBeforeKillPort:
+      typeof raw?.confirmBeforeKillPort === 'boolean'
+        ? raw.confirmBeforeKillPort
+        : DEFAULTS.confirmBeforeKillPort,
+    scanDepth: [1, 2, 3].includes(raw?.scanDepth) ? raw.scanDepth : DEFAULTS.scanDepth,
+    excludedFolders: Array.isArray(raw?.excludedFolders)
+      ? Array.from(
+          new Set(
+            raw.excludedFolders.filter((p) => typeof p === 'string' && p.trim()).map((p) => p.trim())
+          )
+        )
+      : DEFAULTS.excludedFolders,
+    checkUpdatesOnLaunch:
+      typeof raw?.checkUpdatesOnLaunch === 'boolean'
+        ? raw.checkUpdatesOnLaunch
+        : DEFAULTS.checkUpdatesOnLaunch,
+    autoDownloadUpdates:
+      typeof raw?.autoDownloadUpdates === 'boolean'
+        ? raw.autoDownloadUpdates
+        : DEFAULTS.autoDownloadUpdates,
+    updateChannel: ['stable', 'beta'].includes(raw?.updateChannel)
+      ? raw.updateChannel
+      : DEFAULTS.updateChannel,
+    accentColor: /^#[0-9A-Fa-f]{6}$/.test(String(raw?.accentColor || '').trim())
+      ? raw.accentColor.trim().toLowerCase()
+      : DEFAULTS.accentColor,
+    fontSize: ['small', 'medium', 'large'].includes(raw?.fontSize) ? raw.fontSize : DEFAULTS.fontSize,
+    compactMode: typeof raw?.compactMode === 'boolean' ? raw.compactMode : DEFAULTS.compactMode,
+    notifyNewPort: typeof raw?.notifyNewPort === 'boolean' ? raw.notifyNewPort : DEFAULTS.notifyNewPort,
+    notifyPackageUpdates:
+      typeof raw?.notifyPackageUpdates === 'boolean'
+        ? raw.notifyPackageUpdates
+        : DEFAULTS.notifyPackageUpdates,
+    notifyPluginFailure:
+      typeof raw?.notifyPluginFailure === 'boolean'
+        ? raw.notifyPluginFailure
+        : DEFAULTS.notifyPluginFailure
+  }
+}
+
+export function getSettingsSync() {
+  try {
+    if (!existsSync(SETTINGS_FILE)) return { ...DEFAULTS }
+    const raw = JSON.parse(readFileSyncFs(SETTINGS_FILE, 'utf8'))
+    return mergeWithDefaults(raw)
+  } catch {
+    return { ...DEFAULTS }
+  }
+}
+
+export async function getSettings() {
+  try {
+    const raw = JSON.parse(await readFile(SETTINGS_FILE, 'utf8'))
+    return mergeWithDefaults(raw)
+  } catch {
+    return { ...DEFAULTS }
+  }
+}
+
+export async function saveSettings(partial) {
+  const current = await getSettings()
+  const next = mergeWithDefaults({ ...current, ...partial })
+  await writeFile(SETTINGS_FILE, JSON.stringify(next, null, 2), 'utf8')
+  return next
+}
+
+export async function resetSettings() {
+  await writeFile(SETTINGS_FILE, JSON.stringify(DEFAULTS, null, 2), 'utf8')
+  return { ...DEFAULTS }
+}

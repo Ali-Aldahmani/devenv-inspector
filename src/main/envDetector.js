@@ -11,6 +11,49 @@ const TYPE_PRIORITY = {
   'Node modules': 1
 }
 
+/** Directory names never scanned (basename match). *.egg-info matches suffix. */
+const ALWAYS_EXCLUDED_DIR_NAMES = new Set([
+  'node_modules',
+  '.git',
+  '.svn',
+  '__pycache__',
+  '.cache',
+  'dist',
+  'build',
+  '.next',
+  '.nuxt',
+  'out',
+  'coverage',
+  '.tox',
+  '.eggs'
+])
+
+function isAlwaysExcludedDirName(name) {
+  if (ALWAYS_EXCLUDED_DIR_NAMES.has(name)) return true
+  if (name.endsWith('.egg-info')) return true
+  return false
+}
+
+function normalizePathKey(p) {
+  return path.normalize(String(p).trim())
+}
+
+/** True if absPath is exactly `ex` or a subdirectory of `ex`. */
+function isPathUnderExcludedPrefix(absPath, excludedFolders) {
+  const n = normalizePathKey(absPath)
+  const lower = process.platform === 'win32' ? n.toLowerCase() : n
+  for (const ex of excludedFolders) {
+    if (!ex) continue
+    const exn = normalizePathKey(ex)
+    const exCmp = process.platform === 'win32' ? exn.toLowerCase() : exn
+    if (lower === exCmp) return true
+    const sep = path.sep
+    const prefix = exCmp.endsWith(sep) ? exCmp : exCmp + sep
+    if (lower.startsWith(prefix)) return true
+  }
+  return false
+}
+
 async function safeStat(targetPath) {
   try {
     return await stat(targetPath)
@@ -29,12 +72,24 @@ async function existsDir(targetPath) {
   return Boolean(s?.isDirectory())
 }
 
-async function listDirectories(parentPath) {
+async function listDirectoriesFiltered(parentPath, excludedFolders) {
   try {
     const entries = await readdir(parentPath, { withFileTypes: true })
-    return entries.filter((e) => e.isDirectory()).map((e) => path.join(parentPath, e.name))
+    const dirs = []
+    for (const e of entries) {
+      if (!e.isDirectory()) continue
+      if (isAlwaysExcludedDirName(e.name)) continue
+      const childPath = path.join(parentPath, e.name)
+      if (isPathUnderExcludedPrefix(childPath, excludedFolders)) continue
+      dirs.push(childPath)
+    }
+    return dirs
   } catch {
-    addDiagnostic({ source: 'environment scan', message: 'Environment scanning failed', details: 'Unexpected scanner error' })
+    addDiagnostic({
+      source: 'environment scan',
+      message: 'Environment scanning failed',
+      details: 'Unexpected scanner error'
+    })
     return []
   }
 }
@@ -88,15 +143,9 @@ async function detectType(projectPath) {
 
 function getDefaultRoots() {
   const home = os.homedir()
-  const roots = [
-    'Desktop',
-    'Documents',
-    'Downloads',
-    'Projects',
-    'Developer',
-    'dev',
-    'code'
-  ].map((p) => path.join(home, p))
+  const roots = ['Desktop', 'Documents', 'Downloads', 'Projects', 'Developer', 'dev', 'code'].map((p) =>
+    path.join(home, p)
+  )
 
   if (process.platform === 'win32') {
     roots.push(
@@ -111,8 +160,22 @@ function getDefaultRoots() {
   return roots
 }
 
-export async function detectEnvs(paths = []) {
+/**
+ * @param {string[]} paths - extra scan roots from user
+ * @param {1|2|3} scanDepth - 1: one level under each root; 2: two levels; 3: three levels
+ * @param {string[]} excludedFolders - absolute paths to skip entirely
+ */
+export async function detectEnvs(paths = [], scanDepth = 2, excludedFolders = []) {
   try {
+    const depth = [1, 2, 3].includes(scanDepth) ? scanDepth : 2
+    const excluded = Array.isArray(excludedFolders)
+      ? Array.from(
+          new Set(
+            excludedFolders.filter((p) => typeof p === 'string' && p.trim()).map((p) => p.trim())
+          )
+        )
+      : []
+
     const mergedRoots = Array.from(
       new Set([
         ...getDefaultRoots(),
@@ -121,16 +184,33 @@ export async function detectEnvs(paths = []) {
     )
 
     const candidates = new Set()
+
     for (const root of mergedRoots) {
       if (!(await existsDir(root))) continue
-      const levelOne = await listDirectories(root)
-      for (const dir of levelOne) {
+      if (isPathUnderExcludedPrefix(root, excluded)) continue
+
+      const level1 = await listDirectoriesFiltered(root, excluded)
+      for (const dir of level1) {
         candidates.add(dir)
       }
-      for (const dir of levelOne) {
-        const levelTwo = await listDirectories(dir)
-        for (const nested of levelTwo) {
-          candidates.add(nested)
+
+      if (depth >= 2) {
+        for (const dir of level1) {
+          if (isPathUnderExcludedPrefix(dir, excluded)) continue
+          const level2 = await listDirectoriesFiltered(dir, excluded)
+          for (const nested of level2) {
+            candidates.add(nested)
+          }
+
+          if (depth >= 3) {
+            for (const nested of level2) {
+              if (isPathUnderExcludedPrefix(nested, excluded)) continue
+              const level3 = await listDirectoriesFiltered(nested, excluded)
+              for (const deep of level3) {
+                candidates.add(deep)
+              }
+            }
+          }
         }
       }
     }
@@ -138,6 +218,8 @@ export async function detectEnvs(paths = []) {
     const byPath = new Map()
     for (const projectPath of candidates) {
       try {
+        if (isPathUnderExcludedPrefix(projectPath, excluded)) continue
+
         const detected = await detectType(projectPath)
         if (!detected) continue
 

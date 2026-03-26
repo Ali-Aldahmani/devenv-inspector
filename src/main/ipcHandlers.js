@@ -19,8 +19,22 @@ import {
   isRuntimeEnabled
 } from './pluginManager.js'
 import { pluginCatalog } from './pluginCatalog.js'
+import { getSettings, saveSettings, resetSettings } from './settingsStore.js'
+import {
+  applyUpdaterSettingsFromStore,
+  checkForUpdates,
+  downloadUpdate,
+  installUpdate,
+  setAutoDownload,
+  setUpdateChannel
+} from './updater.js'
+import { notifyNewPort, notifyPackageUpdates } from './notifier.js'
 
 const PACKAGE_NAME_RE = /^[a-zA-Z0-9._\-@/]+$/
+
+/** Skip first get-ports snapshot so startup does not notify every existing port */
+let prevPortKeys = null
+let hasNotifiedUpdatesThisSession = false
 
 let cachedRuntimes = null
 const SCAN_FOLDERS_FILE = path.join(app.getPath('userData'), 'scan-folders.json')
@@ -136,16 +150,44 @@ export function registerIpcHandlers() {
       })
     )
 
-    return all.flat()
+    const result = all.flat()
+    if (!hasNotifiedUpdatesThisSession && result.length > 0) {
+      const s = await getSettings()
+      if (s.notifyPackageUpdates) {
+        notifyPackageUpdates(result.length)
+        hasNotifiedUpdatesThisSession = true
+      }
+    }
+    return result
   })
 
   ipcMain.handle('get-ports', async () => {
-    return getActivePorts()
+    const list = await getActivePorts()
+    const keys = new Set(list.map((p) => `${p.port}|${p.protocol}|${p.pid}`))
+
+    if (prevPortKeys !== null) {
+      const settings = await getSettings()
+      if (settings.notifyNewPort) {
+        for (const p of list) {
+          const key = `${p.port}|${p.protocol}|${p.pid}`
+          if (!prevPortKeys.has(key)) {
+            notifyNewPort(p.port, p.process ?? 'unknown')
+          }
+        }
+      }
+    }
+    prevPortKeys = keys
+    return list
   })
 
   ipcMain.handle('get-environments', async (_event, extraPaths = []) => {
     try {
-      return await detectEnvs(extraPaths)
+      const settings = await getSettings()
+      return await detectEnvs(
+        extraPaths,
+        settings.scanDepth ?? 2,
+        settings.excludedFolders ?? []
+      )
     } catch {
       addDiagnostic({ source: 'get-environments', message: 'Failed to load environments', details: '' })
       return []
@@ -290,5 +332,48 @@ export function registerIpcHandlers() {
   ipcMain.handle('clear-diagnostics', async () => {
     clearDiagnostics()
     return { success: true }
+  })
+
+  ipcMain.handle('get-settings', async () => getSettings())
+  ipcMain.handle('save-settings', async (_event, partial) => {
+    const next = await saveSettings(partial ?? {})
+    applyUpdaterSettingsFromStore()
+    return next
+  })
+  ipcMain.handle('reset-settings', async () => {
+    const next = await resetSettings()
+    applyUpdaterSettingsFromStore()
+    return next
+  })
+
+  ipcMain.handle('check-for-updates', async (_event, opts) => {
+    await checkForUpdates(Boolean(opts?.manual))
+    return { success: true }
+  })
+  ipcMain.handle('download-update', async () => {
+    await downloadUpdate()
+    return { success: true }
+  })
+  ipcMain.handle('install-update', async () => {
+    installUpdate()
+    return { success: true }
+  })
+  ipcMain.handle('set-auto-download', async (_event, value) => {
+    setAutoDownload(Boolean(value))
+    return { success: true }
+  })
+  ipcMain.handle('set-update-channel', async (_event, channel) => {
+    const ch = channel === 'beta' ? 'beta' : 'stable'
+    setUpdateChannel(ch)
+    return { success: true }
+  })
+  ipcMain.handle('open-external-url', async (_event, url) => {
+    if (typeof url !== 'string' || !url.trim()) return { success: false }
+    try {
+      await shell.openExternal(url.trim())
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: err?.message || 'Failed to open URL' }
+    }
   })
 }
